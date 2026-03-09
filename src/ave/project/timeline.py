@@ -335,7 +335,6 @@ class Timeline:
             raise TimelineError(f"Invalid effect ID format: {effect_id}")
 
 
-
 def _path_to_uri(path: Path) -> str:
     """Convert a Path to a file URI."""
     abs_path = str(path.resolve())
