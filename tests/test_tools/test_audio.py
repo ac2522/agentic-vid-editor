@@ -211,3 +211,17 @@ class TestNormalizeParams:
 
         with pytest.raises(AudioError, match="target"):
             compute_normalize(current_peak_db=-10.0, target_peak_db=10.0)
+
+    def test_normalize_silent_clip_raises(self):
+        """Normalizing a silent clip (peak=-inf) must raise AudioError."""
+        from ave.tools.audio import compute_normalize, AudioError
+
+        with pytest.raises(AudioError, match="silent"):
+            compute_normalize(current_peak_db=-math.inf, target_peak_db=-1.0)
+
+    def test_normalize_extremely_quiet_clip_raises(self):
+        """Normalizing a near-silent clip (peak < -120 dB) must raise AudioError."""
+        from ave.tools.audio import compute_normalize, AudioError
+
+        with pytest.raises(AudioError, match="silent"):
+            compute_normalize(current_peak_db=-150.0, target_peak_db=-1.0)

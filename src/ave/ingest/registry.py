@@ -26,6 +26,10 @@ class AssetEntry(BaseModel):
     visual_analysis_path: Path | None = None
 
 
+class RegistryError(Exception):
+    """Raised when registry operations fail."""
+
+
 class AssetRegistry:
     """JSON-backed registry of ingested media assets."""
 
@@ -39,9 +43,13 @@ class AssetRegistry:
         self._entries[entry.asset_id] = entry
 
     def get(self, asset_id: str) -> AssetEntry:
+        if asset_id not in self._entries:
+            raise RegistryError(f"Asset not found: {asset_id}")
         return self._entries[asset_id]
 
     def remove(self, asset_id: str) -> None:
+        if asset_id not in self._entries:
+            raise RegistryError(f"Asset not found: {asset_id}")
         del self._entries[asset_id]
 
     def list_all(self) -> list[AssetEntry]:

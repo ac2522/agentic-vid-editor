@@ -116,3 +116,43 @@ class TestTranscoder:
         assert entry.proxy_path.exists()
         assert registry.count() == 1
         assert registry.get("clip_001") == entry
+
+    def test_transcode_to_working_verifies_output(self):
+        """Working transcode must produce a non-empty output file."""
+        from ave.ingest.transcoder import transcode_to_working
+
+        output = self.project / "assets" / "media" / "working" / "clip.mxf"
+        transcode_to_working(self.source, output, codec="dnxhd", profile="dnxhr_hqx")
+
+        assert output.exists()
+        assert output.stat().st_size > 0
+
+    def test_transcode_to_proxy_verifies_output(self):
+        """Proxy transcode must produce a non-empty output file."""
+        from ave.ingest.transcoder import transcode_to_proxy
+
+        output = self.project / "assets" / "media" / "proxy" / "clip.mp4"
+        transcode_to_proxy(self.source, output, height=480)
+
+        assert output.exists()
+        assert output.stat().st_size > 0
+
+    @pytest.mark.slow
+    def test_ingest_verifies_outputs(self):
+        """Ingest must verify transcoded outputs exist and are non-empty."""
+        from ave.ingest.transcoder import ingest
+        from ave.ingest.registry import AssetRegistry
+
+        registry = AssetRegistry(self.project / "assets" / "registry.json")
+        entry = ingest(
+            source=self.source,
+            project_dir=self.project,
+            asset_id="clip_002",
+            registry=registry,
+            project_fps=24.0,
+        )
+
+        assert entry.working_path.exists()
+        assert entry.working_path.stat().st_size > 0
+        assert entry.proxy_path.exists()
+        assert entry.proxy_path.stat().st_size > 0

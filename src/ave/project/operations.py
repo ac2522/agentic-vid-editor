@@ -73,38 +73,17 @@ def split_clip(timeline: Timeline, clip_id: str, position_ns: int) -> tuple[str,
     # Modify existing clip to be the left portion
     clip.set_duration(left_params.duration_ns)
 
-    # Get the media URI from the existing clip's asset
-    asset = clip.get_asset()
-    if asset is None:
-        clip.set_duration(original_duration)  # rollback
-        raise OperationError(f"Clip {clip_id} has no asset")
-
-    # Get the layer
-    layer = clip.get_layer()
-    if layer is None:
-        clip.set_duration(original_duration)  # rollback
-        raise OperationError(f"Clip {clip_id} has no layer")
-
-    import gi
-
-    gi.require_version("GES", "1.0")
-    from gi.repository import GES
-
-    # Add right portion as new clip
-    right_clip = layer.add_asset(
-        asset,
-        right_params.start_ns,
-        right_params.inpoint_ns,
-        right_params.duration_ns,
-        GES.TrackType.UNKNOWN,
-    )
-
-    if right_clip is None:
+    # Add right portion via Timeline's public API
+    try:
+        right_id = timeline.add_clip_from_source(
+            source_clip_id=clip_id,
+            start_ns=right_params.start_ns,
+            inpoint_ns=right_params.inpoint_ns,
+            duration_ns=right_params.duration_ns,
+        )
+    except Exception:
         clip.set_duration(original_duration)  # rollback
         raise OperationError(f"Failed to create right portion of split at {position_ns}")
-
-    # P0-1: Use public API to register the new clip
-    right_id = timeline.register_clip(right_clip)
 
     return clip_id, right_id
 

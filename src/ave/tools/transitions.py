@@ -38,6 +38,7 @@ def compute_transition(
     clip_b_start_ns: int,
     transition_type: TransitionType,
     duration_ns: int,
+    clip_b_duration_ns: int | None = None,
 ) -> TransitionParams:
     """Validate and compute transition parameters.
 
@@ -72,6 +73,11 @@ def compute_transition(
         raise TransitionError(
             f"Clips must be adjacent for transition. Gap of {gap}ns between "
             f"clip_a (ends {clip_a_end_ns}) and clip_b (starts {clip_b_start_ns})"
+        )
+
+    if clip_b_duration_ns is not None and duration_ns > clip_b_duration_ns:
+        raise TransitionError(
+            f"Transition duration ({duration_ns}ns) exceeds clip B duration ({clip_b_duration_ns}ns)"
         )
 
     # For a transition, clip_b moves earlier by the full transition

@@ -97,12 +97,20 @@ class TestAssetRegistry:
         assert reg.count() == 0
 
     def test_get_nonexistent_raises(self, tmp_project: Path):
-        from ave.ingest.registry import AssetRegistry
+        from ave.ingest.registry import AssetRegistry, RegistryError
 
         reg = AssetRegistry(tmp_project / "assets" / "registry.json")
 
-        with pytest.raises(KeyError):
+        with pytest.raises(RegistryError, match="not found"):
             reg.get("nonexistent")
+
+    def test_remove_nonexistent_raises(self, tmp_project: Path):
+        from ave.ingest.registry import AssetRegistry, RegistryError
+
+        reg = AssetRegistry(tmp_project / "assets" / "registry.json")
+
+        with pytest.raises(RegistryError, match="not found"):
+            reg.remove("nonexistent")
 
     def test_list_all(self, tmp_project: Path):
         from ave.ingest.registry import AssetRegistry, AssetEntry
