@@ -19,15 +19,22 @@ def generate_color_bars(
     output.parent.mkdir(parents=True, exist_ok=True)
     subprocess.run(
         [
-            "ffmpeg", "-y",
-            "-f", "lavfi",
-            "-i", f"testsrc2=size={width}x{height}:rate={fps}:duration={duration}",
-            "-c:v", "libx264",
-            "-preset", "ultrafast",
-            "-pix_fmt", "yuv420p",
+            "ffmpeg",
+            "-y",
+            "-f",
+            "lavfi",
+            "-i",
+            f"testsrc2=size={width}x{height}:rate={fps}:duration={duration}",
+            "-c:v",
+            "libx264",
+            "-preset",
+            "ultrafast",
+            "-pix_fmt",
+            "yuv420p",
             str(output),
         ],
-        capture_output=True, check=True,
+        capture_output=True,
+        check=True,
     )
 
 
@@ -41,13 +48,18 @@ def generate_test_tone(
     output.parent.mkdir(parents=True, exist_ok=True)
     subprocess.run(
         [
-            "ffmpeg", "-y",
-            "-f", "lavfi",
-            "-i", f"sine=frequency={frequency}:sample_rate={sample_rate}:duration={duration}",
-            "-c:a", "pcm_s16le",
+            "ffmpeg",
+            "-y",
+            "-f",
+            "lavfi",
+            "-i",
+            f"sine=frequency={frequency}:sample_rate={sample_rate}:duration={duration}",
+            "-c:a",
+            "pcm_s16le",
             str(output),
         ],
-        capture_output=True, check=True,
+        capture_output=True,
+        check=True,
     )
 
 
@@ -63,17 +75,28 @@ def generate_av_clip(
     output.parent.mkdir(parents=True, exist_ok=True)
     subprocess.run(
         [
-            "ffmpeg", "-y",
-            "-f", "lavfi",
-            "-i", f"testsrc2=size={width}x{height}:rate={fps}:duration={duration}",
-            "-f", "lavfi",
-            "-i", f"sine=frequency={audio_freq}:sample_rate=48000:duration={duration}",
-            "-c:v", "libx264",
-            "-preset", "ultrafast",
-            "-pix_fmt", "yuv420p",
-            "-c:a", "aac",
-            "-b:a", "128k",
+            "ffmpeg",
+            "-y",
+            "-f",
+            "lavfi",
+            "-i",
+            f"testsrc2=size={width}x{height}:rate={fps}:duration={duration}",
+            "-f",
+            "lavfi",
+            "-i",
+            f"sine=frequency={audio_freq}:sample_rate=48000:duration={duration}",
+            "-c:v",
+            "libx264",
+            "-preset",
+            "ultrafast",
+            "-pix_fmt",
+            "yuv420p",
+            "-c:a",
+            "aac",
+            "-b:a",
+            "128k",
             str(output),
         ],
-        capture_output=True, check=True,
+        capture_output=True,
+        check=True,
     )

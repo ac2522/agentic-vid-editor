@@ -10,7 +10,7 @@ import gi
 gi.require_version("Gst", "1.0")
 gi.require_version("GES", "1.0")
 
-from gi.repository import GES, GLib, Gst  # noqa: E402
+from gi.repository import GES, Gst  # noqa: E402
 
 # Initialize GStreamer and GES once
 Gst.init(None)
@@ -123,7 +123,11 @@ class Timeline:
 
         target_layer = layers[layer]
         clip = target_layer.add_asset(
-            asset, start_ns, inpoint_ns, duration_ns, GES.TrackType.UNKNOWN,
+            asset,
+            start_ns,
+            inpoint_ns,
+            duration_ns,
+            GES.TrackType.UNKNOWN,
         )
 
         if clip is None:
@@ -187,9 +191,7 @@ class Timeline:
 
         raise TimelineError(f"Effect {effect_id} not found on {clip_id}")
 
-    def get_effect_property(
-        self, clip_id: str, effect_id: str, prop_name: str
-    ) -> object:
+    def get_effect_property(self, clip_id: str, effect_id: str, prop_name: str) -> object:
         """Get a property from an effect."""
         clip = self._get_clip(clip_id)
         element_name = effect_id.split("_fx_")[-1]

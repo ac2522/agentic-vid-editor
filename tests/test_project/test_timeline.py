@@ -41,6 +41,7 @@ class TestTimelineClips:
         self.clip_path = fixtures_dir / "av_clip_1080p24.mp4"
         if not self.clip_path.exists():
             from tests.fixtures.generate import generate_av_clip
+
             generate_av_clip(self.clip_path)
         self.project = tmp_project
 
@@ -81,7 +82,9 @@ class TestTimelineClips:
 
         tl = Timeline.create(self.project / "project.xges", fps=24.0)
         clip_id = tl.add_clip(
-            media_path=self.clip_path, layer=0, start_ns=0,
+            media_path=self.clip_path,
+            layer=0,
+            start_ns=0,
             duration_ns=2 * 1_000_000_000,
         )
 
@@ -104,7 +107,9 @@ class TestTimelineClips:
 
         tl = Timeline.create(self.project / "project.xges", fps=24.0)
         clip_id = tl.add_clip(
-            media_path=self.clip_path, layer=0, start_ns=0,
+            media_path=self.clip_path,
+            layer=0,
+            start_ns=0,
             duration_ns=2 * 1_000_000_000,
         )
 
@@ -118,7 +123,9 @@ class TestTimelineClips:
         xges_path = self.project / "project.xges"
         tl = Timeline.create(xges_path, fps=24.0)
         tl.add_clip(
-            media_path=self.clip_path, layer=0, start_ns=0,
+            media_path=self.clip_path,
+            layer=0,
+            start_ns=0,
             duration_ns=2 * 1_000_000_000,
         )
         tl.save()
@@ -135,6 +142,7 @@ class TestTimelineEffects:
         self.clip_path = fixtures_dir / "av_clip_1080p24.mp4"
         if not self.clip_path.exists():
             from tests.fixtures.generate import generate_av_clip
+
             generate_av_clip(self.clip_path)
         self.project = tmp_project
 
@@ -143,7 +151,9 @@ class TestTimelineEffects:
 
         tl = Timeline.create(self.project / "project.xges", fps=24.0)
         clip_id = tl.add_clip(
-            media_path=self.clip_path, layer=0, start_ns=0,
+            media_path=self.clip_path,
+            layer=0,
+            start_ns=0,
             duration_ns=2 * 1_000_000_000,
         )
 
@@ -155,7 +165,9 @@ class TestTimelineEffects:
 
         tl = Timeline.create(self.project / "project.xges", fps=24.0)
         clip_id = tl.add_clip(
-            media_path=self.clip_path, layer=0, start_ns=0,
+            media_path=self.clip_path,
+            layer=0,
+            start_ns=0,
             duration_ns=2 * 1_000_000_000,
         )
         effect_id = tl.add_effect(clip_id, "videobalance")
@@ -169,7 +181,9 @@ class TestTimelineEffects:
 
         tl = Timeline.create(self.project / "project.xges", fps=24.0)
         clip_id = tl.add_clip(
-            media_path=self.clip_path, layer=0, start_ns=0,
+            media_path=self.clip_path,
+            layer=0,
+            start_ns=0,
             duration_ns=2 * 1_000_000_000,
         )
         effect_id = tl.add_effect(clip_id, "videobalance")

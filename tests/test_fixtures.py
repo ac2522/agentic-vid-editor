@@ -82,12 +82,18 @@ class TestFixtureGeneration:
 def _probe(path: Path) -> dict:
     result = subprocess.run(
         [
-            "ffprobe", "-v", "quiet",
-            "-print_format", "json",
-            "-show_format", "-show_streams",
+            "ffprobe",
+            "-v",
+            "quiet",
+            "-print_format",
+            "json",
+            "-show_format",
+            "-show_streams",
             str(path),
         ],
-        capture_output=True, text=True, check=True,
+        capture_output=True,
+        text=True,
+        check=True,
     )
     return json.loads(result.stdout)
 

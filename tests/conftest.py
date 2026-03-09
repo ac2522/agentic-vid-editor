@@ -19,9 +19,11 @@ def _ffmpeg_available() -> bool:
 def _ges_available() -> bool:
     try:
         import gi
+
         gi.require_version("Gst", "1.0")
         gi.require_version("GES", "1.0")
         from gi.repository import Gst, GES
+
         Gst.init(None)
         GES.init()
         return True
@@ -31,9 +33,7 @@ def _ges_available() -> bool:
 
 def _gpu_available() -> bool:
     try:
-        result = subprocess.run(
-            ["nvidia-smi"], capture_output=True, check=True, text=True
-        )
+        result = subprocess.run(["nvidia-smi"], capture_output=True, check=True, text=True)
         return "NVIDIA" in result.stdout
     except (FileNotFoundError, subprocess.CalledProcessError):
         return False

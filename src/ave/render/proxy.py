@@ -8,7 +8,7 @@ gi.require_version("Gst", "1.0")
 gi.require_version("GES", "1.0")
 gi.require_version("GstPbutils", "1.0")
 
-from gi.repository import GES, GLib, Gst, GstPbutils  # noqa: E402
+from gi.repository import GES, Gst, GstPbutils  # noqa: E402
 
 from ave.project.timeline import _path_to_uri  # noqa: E402
 
@@ -44,16 +44,16 @@ def render_proxy(
 
     # Build encoding profile: H.264 video + AAC audio in MP4
     container_profile = GstPbutils.EncodingContainerProfile.new(
-        "mp4", None,
+        "mp4",
+        None,
         Gst.Caps.from_string("video/quicktime,variant=iso"),
         None,
     )
 
-    video_caps = Gst.Caps.from_string(
-        f"video/x-h264,height={height}"
-    )
+    video_caps = Gst.Caps.from_string(f"video/x-h264,height={height}")
     video_profile = GstPbutils.EncodingVideoProfile.new(
-        video_caps, None,
+        video_caps,
+        None,
         Gst.Caps.from_string(f"video/x-raw,height={height}"),
         0,
     )
@@ -61,7 +61,10 @@ def render_proxy(
 
     audio_caps = Gst.Caps.from_string("audio/mpeg,mpegversion=4")
     audio_profile = GstPbutils.EncodingAudioProfile.new(
-        audio_caps, None, None, 0,
+        audio_caps,
+        None,
+        None,
+        0,
     )
     container_profile.add_profile(audio_profile)
 

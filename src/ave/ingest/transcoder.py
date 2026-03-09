@@ -30,17 +30,27 @@ def transcode_to_working(
         cmd.extend(["-r", str(target_fps)])
 
     if codec == "dnxhd":
-        cmd.extend([
-            "-c:v", "dnxhd",
-            "-profile:v", profile,
-            "-pix_fmt", "yuv422p10le",
-        ])
+        cmd.extend(
+            [
+                "-c:v",
+                "dnxhd",
+                "-profile:v",
+                profile,
+                "-pix_fmt",
+                "yuv422p10le",
+            ]
+        )
     elif codec == "prores":
-        cmd.extend([
-            "-c:v", "prores_ks",
-            "-profile:v", "3",  # HQ
-            "-pix_fmt", "yuv422p10le",
-        ])
+        cmd.extend(
+            [
+                "-c:v",
+                "prores_ks",
+                "-profile:v",
+                "3",  # HQ
+                "-pix_fmt",
+                "yuv422p10le",
+            ]
+        )
     else:
         raise TranscodeError(f"Unsupported codec: {codec}")
 
@@ -68,16 +78,25 @@ def transcode_to_proxy(
     if target_fps is not None:
         cmd.extend(["-r", str(target_fps)])
 
-    cmd.extend([
-        "-vf", f"scale=-2:{height}",
-        "-c:v", "libx264",
-        "-preset", "fast",
-        "-crf", "23",
-        "-pix_fmt", "yuv420p",
-        "-c:a", "aac",
-        "-b:a", "128k",
-        str(output),
-    ])
+    cmd.extend(
+        [
+            "-vf",
+            f"scale=-2:{height}",
+            "-c:v",
+            "libx264",
+            "-preset",
+            "fast",
+            "-crf",
+            "23",
+            "-pix_fmt",
+            "yuv420p",
+            "-c:a",
+            "aac",
+            "-b:a",
+            "128k",
+            str(output),
+        ]
+    )
 
     try:
         subprocess.run(cmd, capture_output=True, check=True)
@@ -112,14 +131,18 @@ def ingest(
     # 3. Transcode to working intermediate (preserving camera log)
     needs_conform = info.video.fps != project_fps
     transcode_to_working(
-        source, working_path,
-        codec=codec, profile=profile,
+        source,
+        working_path,
+        codec=codec,
+        profile=profile,
         target_fps=project_fps if needs_conform else None,
     )
 
     # 4. Transcode to proxy
     transcode_to_proxy(
-        source, proxy_path, height=480,
+        source,
+        proxy_path,
+        height=480,
         target_fps=project_fps if needs_conform else None,
     )
 

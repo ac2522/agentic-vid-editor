@@ -43,21 +43,23 @@ class TestAssetRegistry:
 
         registry_path = tmp_project / "assets" / "registry.json"
         reg = AssetRegistry(registry_path)
-        reg.add(AssetEntry(
-            asset_id="clip_001",
-            original_path=Path("/media/raw/take1.mov"),
-            working_path=Path("working/take1.mxf"),
-            proxy_path=Path("proxy/take1.mp4"),
-            original_fps=24.0,
-            conformed_fps=24.0,
-            duration_seconds=60.0,
-            width=1920,
-            height=1080,
-            codec="dnxhd",
-            camera_color_space="V-Gamut",
-            camera_transfer="V-Log",
-            idt_reference="aces_vlog_to_ap1",
-        ))
+        reg.add(
+            AssetEntry(
+                asset_id="clip_001",
+                original_path=Path("/media/raw/take1.mov"),
+                working_path=Path("working/take1.mxf"),
+                proxy_path=Path("proxy/take1.mp4"),
+                original_fps=24.0,
+                conformed_fps=24.0,
+                duration_seconds=60.0,
+                width=1920,
+                height=1080,
+                codec="dnxhd",
+                camera_color_space="V-Gamut",
+                camera_transfer="V-Log",
+                idt_reference="aces_vlog_to_ap1",
+            )
+        )
         reg.save()
 
         # Load into a new instance
@@ -73,16 +75,23 @@ class TestAssetRegistry:
         from ave.ingest.registry import AssetRegistry, AssetEntry
 
         reg = AssetRegistry(tmp_project / "assets" / "registry.json")
-        reg.add(AssetEntry(
-            asset_id="clip_001",
-            original_path=Path("/media/raw/take1.mov"),
-            working_path=Path("working/take1.mxf"),
-            proxy_path=Path("proxy/take1.mp4"),
-            original_fps=24.0, conformed_fps=24.0,
-            duration_seconds=60.0, width=1920, height=1080,
-            codec="dnxhd", camera_color_space="Rec709",
-            camera_transfer="bt709", idt_reference=None,
-        ))
+        reg.add(
+            AssetEntry(
+                asset_id="clip_001",
+                original_path=Path("/media/raw/take1.mov"),
+                working_path=Path("working/take1.mxf"),
+                proxy_path=Path("proxy/take1.mp4"),
+                original_fps=24.0,
+                conformed_fps=24.0,
+                duration_seconds=60.0,
+                width=1920,
+                height=1080,
+                codec="dnxhd",
+                camera_color_space="Rec709",
+                camera_transfer="bt709",
+                idt_reference=None,
+            )
+        )
 
         reg.remove("clip_001")
         assert reg.count() == 0
@@ -100,16 +109,23 @@ class TestAssetRegistry:
 
         reg = AssetRegistry(tmp_project / "assets" / "registry.json")
         for i in range(3):
-            reg.add(AssetEntry(
-                asset_id=f"clip_{i:03d}",
-                original_path=Path(f"/media/raw/take{i}.mov"),
-                working_path=Path(f"working/take{i}.mxf"),
-                proxy_path=Path(f"proxy/take{i}.mp4"),
-                original_fps=24.0, conformed_fps=24.0,
-                duration_seconds=60.0, width=1920, height=1080,
-                codec="dnxhd", camera_color_space="V-Gamut",
-                camera_transfer="V-Log", idt_reference="aces_vlog_to_ap1",
-            ))
+            reg.add(
+                AssetEntry(
+                    asset_id=f"clip_{i:03d}",
+                    original_path=Path(f"/media/raw/take{i}.mov"),
+                    working_path=Path(f"working/take{i}.mxf"),
+                    proxy_path=Path(f"proxy/take{i}.mp4"),
+                    original_fps=24.0,
+                    conformed_fps=24.0,
+                    duration_seconds=60.0,
+                    width=1920,
+                    height=1080,
+                    codec="dnxhd",
+                    camera_color_space="V-Gamut",
+                    camera_transfer="V-Log",
+                    idt_reference="aces_vlog_to_ap1",
+                )
+            )
 
         entries = reg.list_all()
         assert len(entries) == 3

@@ -11,9 +11,19 @@ from tests.conftest import requires_ffmpeg, requires_ges
 
 def _probe(path: Path) -> dict:
     result = subprocess.run(
-        ["ffprobe", "-v", "quiet", "-print_format", "json",
-         "-show_format", "-show_streams", str(path)],
-        capture_output=True, text=True, check=True,
+        [
+            "ffprobe",
+            "-v",
+            "quiet",
+            "-print_format",
+            "json",
+            "-show_format",
+            "-show_streams",
+            str(path),
+        ],
+        capture_output=True,
+        text=True,
+        check=True,
     )
     return json.loads(result.stdout)
 
@@ -30,6 +40,7 @@ class TestProxyRender:
         self.clip_path = fixtures_dir / "av_clip_1080p24.mp4"
         if not self.clip_path.exists():
             from tests.fixtures.generate import generate_av_clip
+
             generate_av_clip(self.clip_path)
         self.project = tmp_project
 
@@ -39,7 +50,9 @@ class TestProxyRender:
 
         tl = Timeline.create(self.project / "project.xges", fps=24.0)
         tl.add_clip(
-            media_path=self.clip_path, layer=0, start_ns=0,
+            media_path=self.clip_path,
+            layer=0,
+            start_ns=0,
             duration_ns=2 * 1_000_000_000,
         )
         tl.save()
@@ -60,7 +73,9 @@ class TestProxyRender:
 
         tl = Timeline.create(self.project / "project.xges", fps=24.0)
         tl.add_clip(
-            media_path=self.clip_path, layer=0, start_ns=0,
+            media_path=self.clip_path,
+            layer=0,
+            start_ns=0,
             duration_ns=1 * 1_000_000_000,
         )
         tl.save()

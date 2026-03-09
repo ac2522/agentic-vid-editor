@@ -23,6 +23,7 @@ class TestFullPipeline:
         source = fixtures_dir / "av_clip_1080p24.mp4"
         if not source.exists():
             from tests.fixtures.generate import generate_av_clip
+
             generate_av_clip(source)
 
         # 2. Ingest

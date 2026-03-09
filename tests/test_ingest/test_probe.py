@@ -15,6 +15,7 @@ class TestProbe:
         self.fixture = fixtures_dir / "color_bars_1080p24.mp4"
         if not self.fixture.exists():
             from tests.fixtures.generate import generate_color_bars
+
             generate_color_bars(self.fixture)
 
     def test_probe_returns_media_info(self):
@@ -42,6 +43,7 @@ class TestProbe:
         av_clip = fixtures_dir / "av_clip_1080p24.mp4"
         if not av_clip.exists():
             from tests.fixtures.generate import generate_av_clip
+
             generate_av_clip(av_clip)
 
         from ave.ingest.probe import probe_media

@@ -11,9 +11,19 @@ from tests.conftest import requires_ffmpeg
 
 def _probe(path: Path) -> dict:
     result = subprocess.run(
-        ["ffprobe", "-v", "quiet", "-print_format", "json",
-         "-show_format", "-show_streams", str(path)],
-        capture_output=True, text=True, check=True,
+        [
+            "ffprobe",
+            "-v",
+            "quiet",
+            "-print_format",
+            "json",
+            "-show_format",
+            "-show_streams",
+            str(path),
+        ],
+        capture_output=True,
+        text=True,
+        check=True,
     )
     return json.loads(result.stdout)
 
@@ -29,6 +39,7 @@ class TestTranscoder:
         self.source = fixtures_dir / "av_clip_1080p24.mp4"
         if not self.source.exists():
             from tests.fixtures.generate import generate_av_clip
+
             generate_av_clip(self.source)
         self.project = tmp_project
 
@@ -62,6 +73,7 @@ class TestTranscoder:
         source_30 = fixtures_dir / "color_bars_720p30.mp4"
         if not source_30.exists():
             from tests.fixtures.generate import generate_color_bars
+
             generate_color_bars(source_30, duration=3, width=1280, height=720, fps=30)
 
         from ave.ingest.transcoder import transcode_to_working
@@ -69,7 +81,11 @@ class TestTranscoder:
 
         output = self.project / "assets" / "media" / "working" / "conformed.mxf"
         transcode_to_working(
-            source_30, output, codec="dnxhd", profile="dnxhr_hqx", target_fps=24,
+            source_30,
+            output,
+            codec="dnxhd",
+            profile="dnxhr_hqx",
+            target_fps=24,
         )
 
         assert output.exists()
