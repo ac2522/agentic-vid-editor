@@ -31,6 +31,15 @@ def _ges_available() -> bool:
         return False
 
 
+def _whisper_available() -> bool:
+    try:
+        from pywhispercpp.model import Model  # noqa: F401
+
+        return True
+    except ImportError:
+        return False
+
+
 def _gpu_available() -> bool:
     try:
         result = subprocess.run(["nvidia-smi"], capture_output=True, check=True, text=True)
@@ -43,6 +52,7 @@ def _gpu_available() -> bool:
 requires_ffmpeg = pytest.mark.skipif(not _ffmpeg_available(), reason="FFmpeg not found")
 requires_ges = pytest.mark.skipif(not _ges_available(), reason="GES not available")
 requires_gpu = pytest.mark.skipif(not _gpu_available(), reason="NVIDIA GPU not available")
+requires_whisper = pytest.mark.skipif(not _whisper_available(), reason="pywhispercpp not available")
 
 
 @pytest.fixture(scope="session")

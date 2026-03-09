@@ -10,7 +10,7 @@ gi.require_version("GstPbutils", "1.0")
 
 from gi.repository import GES, Gst, GstPbutils  # noqa: E402
 
-from ave.project.timeline import _path_to_uri  # noqa: E402
+from ave.utils import path_to_uri  # noqa: E402
 
 Gst.init(None)
 GES.init()
@@ -24,7 +24,6 @@ def render_proxy(
     xges_path: Path,
     output_path: Path,
     height: int = 480,
-    video_bitrate: int = 2_000_000,
 ) -> None:
     """Render an XGES timeline to an H.264 proxy MP4.
 
@@ -32,7 +31,7 @@ def render_proxy(
     """
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    uri = _path_to_uri(xges_path)
+    uri = path_to_uri(xges_path)
     project = GES.Project.new(uri)
     timeline = project.extract()
 
@@ -68,7 +67,7 @@ def render_proxy(
     )
     container_profile.add_profile(audio_profile)
 
-    output_uri = _path_to_uri(output_path)
+    output_uri = path_to_uri(output_path)
     pipeline.set_render_settings(output_uri, container_profile)
     pipeline.set_mode(GES.PipelineFlags.RENDER)
 

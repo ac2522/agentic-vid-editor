@@ -5,6 +5,7 @@ from pathlib import Path
 
 from ave.ingest.probe import probe_media
 from ave.ingest.registry import AssetEntry, AssetRegistry
+from ave.utils import fps_close
 
 
 class TranscodeError(Exception):
@@ -129,7 +130,7 @@ def ingest(
     proxy_path = project_dir / "assets" / "media" / "proxy" / f"{asset_id}.mp4"
 
     # 3. Transcode to working intermediate (preserving camera log)
-    needs_conform = info.video.fps != project_fps
+    needs_conform = not fps_close(info.video.fps, project_fps)
     transcode_to_working(
         source,
         working_path,

@@ -65,8 +65,10 @@ def compute_transition(
             f"clip_b starts at {clip_b_start_ns}"
         )
 
+    # Tolerate tiny gaps (< 1ms) from nanosecond rounding at frame boundaries
+    _ADJACENCY_TOLERANCE_NS = 1_000_000  # 1ms
     gap = clip_b_start_ns - clip_a_end_ns
-    if gap > 0:
+    if gap > _ADJACENCY_TOLERANCE_NS:
         raise TransitionError(
             f"Clips must be adjacent for transition. Gap of {gap}ns between "
             f"clip_a (ends {clip_a_end_ns}) and clip_b (starts {clip_b_start_ns})"

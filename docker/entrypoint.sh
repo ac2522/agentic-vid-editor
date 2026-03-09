@@ -16,6 +16,12 @@ GES.init()
 print(f'GES initialized: Gst {Gst.version_string()}')
 " || echo "WARNING: GES not available"
 
+# Verify whisper.cpp / pywhispercpp
+python3 -c "
+from pywhispercpp.model import Model
+print('pywhispercpp available')
+" || echo "WARNING: pywhispercpp not available"
+
 # Verify nvcodec if GPU present
 if command -v nvidia-smi &> /dev/null; then
     echo "=== NVIDIA GPU ==="
