@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+import math
 from pathlib import Path
-from urllib.parse import quote
 
 import gi
 
@@ -12,9 +12,14 @@ gi.require_version("GES", "1.0")
 
 from gi.repository import GES, Gst  # noqa: E402
 
+from ave.utils import path_to_uri  # noqa: E402
+
 # Initialize GStreamer and GES once
 Gst.init(None)
 GES.init()
+
+# Tolerance for floating-point FPS comparison (e.g. 23.976 vs 24000/1001)
+_FPS_TOLERANCE = 0.01
 
 
 class TimelineError(Exception):
@@ -30,6 +35,7 @@ class Timeline:
         self._fps = fps
         self._clips: dict[str, GES.Clip] = {}
         self._next_clip_id = 0
+        self._next_effect_seq = 0
 
     @classmethod
     def create(cls, path: Path, fps: float = 24.0) -> Timeline:
@@ -37,6 +43,9 @@ class Timeline:
         timeline = GES.Timeline.new_audio_video()
         if timeline is None:
             raise TimelineError("Failed to create GES timeline")
+
+        # Set FPS on video track restriction caps so it persists on save/load
+        _set_video_track_fps(timeline, fps)
 
         # Add initial layer
         timeline.append_layer()
@@ -51,7 +60,7 @@ class Timeline:
             raise TimelineError(f"XGES file not found: {path}")
 
         timeline = GES.Timeline.new()
-        uri = _path_to_uri(path)
+        uri = path_to_uri(path)
 
         project = GES.Project.new(uri)
         timeline = project.extract()
@@ -73,12 +82,23 @@ class Timeline:
 
         tl = cls(timeline, path, fps)
 
-        # Re-index existing clips
+        # Restore clip IDs from metadata, or generate new ones
         for layer in timeline.get_layers():
             for clip in layer.get_clips():
-                clip_id = f"clip_{tl._next_clip_id:04d}"
+                stored_id = clip.get_meta("agent:clip-id")
+                if stored_id:
+                    clip_id = stored_id
+                    # Parse sequence number to keep _next_clip_id correct
+                    try:
+                        seq = int(stored_id.split("_")[1])
+                        if seq >= tl._next_clip_id:
+                            tl._next_clip_id = seq + 1
+                    except (IndexError, ValueError):
+                        pass
+                else:
+                    clip_id = f"clip_{tl._next_clip_id:04d}"
+                    tl._next_clip_id += 1
                 tl._clips[clip_id] = clip
-                tl._next_clip_id += 1
 
         return tl
 
@@ -106,7 +126,7 @@ class Timeline:
         inpoint_ns: int = 0,
     ) -> str:
         """Add a media clip to the timeline. Returns clip ID."""
-        uri = _path_to_uri(media_path)
+        uri = path_to_uri(media_path)
 
         asset = GES.UriClipAsset.request_sync(uri)
         if asset is None:
@@ -137,6 +157,9 @@ class Timeline:
         self._clips[clip_id] = clip
         self._next_clip_id += 1
 
+        # Store clip ID as metadata for stable IDs across save/load
+        clip.set_meta("agent:clip-id", clip_id)
+
         return clip_id
 
     def remove_clip(self, clip_id: str) -> None:
@@ -149,7 +172,7 @@ class Timeline:
         del self._clips[clip_id]
 
     def add_effect(self, clip_id: str, element_description: str) -> str:
-        """Add a GStreamer effect to a clip. Returns effect ID."""
+        """Add a GStreamer effect to a clip. Returns a unique effect ID."""
         clip = self._get_clip(clip_id)
         effect = GES.Effect.new(element_description)
         if effect is None:
@@ -158,18 +181,24 @@ class Timeline:
         if not clip.add(effect):
             raise TimelineError(f"Failed to add effect to {clip_id}")
 
-        effect_id = f"{clip_id}_fx_{element_description.split()[0]}"
+        # Use a monotonic sequence to avoid collisions when adding
+        # multiple effects with the same element name
+        effect_id = f"{clip_id}_fx{self._next_effect_seq}_{element_description.split()[0]}"
+        self._next_effect_seq += 1
+
+        # Store effect ID on the GES effect for lookup
+        effect.set_meta("agent:effect-id", effect_id)
+
         return effect_id
 
     def remove_effect(self, clip_id: str, effect_id: str) -> None:
         """Remove an effect from a clip."""
         clip = self._get_clip(clip_id)
-        element_name = effect_id.split("_fx_")[-1]
 
         for child in clip.get_children(False):
             if isinstance(child, GES.Effect):
-                desc = child.get_property("bin-description")
-                if desc and desc.split()[0] == element_name:
+                stored_id = child.get_meta("agent:effect-id")
+                if stored_id == effect_id:
                     clip.remove(child)
                     return
 
@@ -179,33 +208,16 @@ class Timeline:
         self, clip_id: str, effect_id: str, prop_name: str, value: object
     ) -> None:
         """Set a property on an effect."""
-        clip = self._get_clip(clip_id)
-        element_name = effect_id.split("_fx_")[-1]
-
-        for child in clip.get_children(False):
-            if isinstance(child, GES.Effect):
-                desc = child.get_property("bin-description")
-                if desc and desc.split()[0] == element_name:
-                    child.set_child_property(prop_name, value)
-                    return
-
-        raise TimelineError(f"Effect {effect_id} not found on {clip_id}")
+        effect = self._get_effect(clip_id, effect_id)
+        effect.set_child_property(prop_name, value)
 
     def get_effect_property(self, clip_id: str, effect_id: str, prop_name: str) -> object:
         """Get a property from an effect."""
-        clip = self._get_clip(clip_id)
-        element_name = effect_id.split("_fx_")[-1]
-
-        for child in clip.get_children(False):
-            if isinstance(child, GES.Effect):
-                desc = child.get_property("bin-description")
-                if desc and desc.split()[0] == element_name:
-                    ok, value = child.get_child_property(prop_name)
-                    if ok:
-                        return value
-                    raise TimelineError(f"Property {prop_name} not found")
-
-        raise TimelineError(f"Effect {effect_id} not found on {clip_id}")
+        effect = self._get_effect(clip_id, effect_id)
+        ok, value = effect.get_child_property(prop_name)
+        if ok:
+            return value
+        raise TimelineError(f"Property {prop_name} not found")
 
     def set_metadata(self, key: str, value: str) -> None:
         """Set metadata on the timeline."""
@@ -228,7 +240,7 @@ class Timeline:
     def save(self) -> None:
         """Save timeline to XGES file."""
         self._path.parent.mkdir(parents=True, exist_ok=True)
-        uri = _path_to_uri(self._path)
+        uri = path_to_uri(self._path)
         if not self._timeline.save_to_uri(uri, None, True):
             raise TimelineError(f"Failed to save timeline to {self._path}")
 
@@ -237,8 +249,55 @@ class Timeline:
             raise TimelineError(f"Clip not found: {clip_id}")
         return self._clips[clip_id]
 
+    def _get_effect(self, clip_id: str, effect_id: str) -> GES.Effect:
+        clip = self._get_clip(clip_id)
+        for child in clip.get_children(False):
+            if isinstance(child, GES.Effect):
+                stored_id = child.get_meta("agent:effect-id")
+                if stored_id == effect_id:
+                    return child
+        raise TimelineError(f"Effect {effect_id} not found on {clip_id}")
 
-def _path_to_uri(path: Path) -> str:
-    """Convert a Path to a file URI."""
-    abs_path = str(path.resolve())
-    return "file://" + quote(abs_path, safe="/")
+
+def _set_video_track_fps(timeline: GES.Timeline, fps: float) -> None:
+    """Set framerate on the video track's restriction caps."""
+    for track in timeline.get_tracks():
+        if track.get_property("track-type") == GES.TrackType.VIDEO:
+            # Convert float fps to fraction (e.g. 23.976 -> 24000/1001)
+            num, den = _fps_to_fraction(fps)
+            caps = Gst.Caps.from_string(
+                f"video/x-raw,framerate={num}/{den}"
+            )
+            track.set_restriction_caps(caps)
+            break
+
+
+def _fps_to_fraction(fps: float) -> tuple[int, int]:
+    """Convert a float FPS to an integer fraction.
+
+    Handles common broadcast framerates precisely.
+    """
+    # Common broadcast framerates
+    known = {
+        23.976: (24000, 1001),
+        24.0: (24, 1),
+        25.0: (25, 1),
+        29.97: (30000, 1001),
+        30.0: (30, 1),
+        48.0: (48, 1),
+        50.0: (50, 1),
+        59.94: (60000, 1001),
+        60.0: (60, 1),
+    }
+    for known_fps, fraction in known.items():
+        if math.isclose(fps, known_fps, rel_tol=1e-3):
+            return fraction
+    # Fallback: multiply to get integer
+    den = 1001 if not math.isclose(fps, round(fps), rel_tol=1e-3) else 1
+    num = round(fps * den)
+    return (num, den)
+
+
+def fps_close(a: float, b: float) -> bool:
+    """Check if two FPS values are effectively equal."""
+    return math.isclose(a, b, rel_tol=1e-3)

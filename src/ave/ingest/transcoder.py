@@ -1,5 +1,6 @@
 """Ingest transcoder — any format to DNxHR HQX + H.264 proxy."""
 
+import math
 import subprocess
 from pathlib import Path
 
@@ -129,7 +130,7 @@ def ingest(
     proxy_path = project_dir / "assets" / "media" / "proxy" / f"{asset_id}.mp4"
 
     # 3. Transcode to working intermediate (preserving camera log)
-    needs_conform = info.video.fps != project_fps
+    needs_conform = not math.isclose(info.video.fps, project_fps, rel_tol=1e-3)
     transcode_to_working(
         source,
         working_path,
