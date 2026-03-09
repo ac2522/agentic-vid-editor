@@ -1,0 +1,24 @@
+services:
+  ave:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+      - DISPLAY=${DISPLAY:-}
+    volumes:
+      - ../src:/app/src
+      - ../tests:/app/tests
+      - ../docs:/app/docs
+      - /tmp/.X11-unix:/tmp/.X11-unix:ro
+    working_dir: /app
+    # Override default CMD for interactive use
+    command: bash
+    stdin_open: true
+    tty: true
+
+  test:
+    extends: ave
+    command: pytest -v -m "not slow"
