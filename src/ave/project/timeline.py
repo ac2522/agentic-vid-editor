@@ -335,8 +335,6 @@ class Timeline:
             raise TimelineError(f"Invalid effect ID format: {effect_id}")
 
 
-_fps_to_fraction = fps_to_fraction
-
 
 def _path_to_uri(path: Path) -> str:
     """Convert a Path to a file URI."""
