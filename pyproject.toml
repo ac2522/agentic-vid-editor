@@ -27,6 +27,7 @@ testpaths = ["tests"]
 markers = [
     "gpu: marks tests that require NVIDIA GPU (deselect with '-m \"not gpu\"')",
     "slow: marks tests that take >10 seconds (deselect with '-m \"not slow\"')",
+    "whisper: marks tests that require pywhispercpp (deselect with '-m \"not whisper\"')",
 ]
 
 [tool.ruff]

@@ -48,6 +48,18 @@ RUN meson setup build \
     && ninja -C build -j$(nproc) \
     && ninja -C build install
 
+# Build whisper.cpp with CUDA support
+WORKDIR /build
+RUN git clone --depth 1 https://github.com/ggml-org/whisper.cpp.git
+WORKDIR /build/whisper.cpp
+RUN cmake -B build \
+    -DGGML_CUDA=1 \
+    -DCMAKE_CUDA_ARCHITECTURES="60;70;75;80;86;89;90" \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DBUILD_SHARED_LIBS=ON \
+    && cmake --build build -j$(nproc) \
+    && cmake --install build
+
 # Update library paths
 RUN ldconfig
 
@@ -83,6 +95,10 @@ ENV GI_TYPELIB_PATH=/usr/local/lib/x86_64-linux-gnu/girepository-1.0
 ENV LD_LIBRARY_PATH=/usr/local/lib/x86_64-linux-gnu:${LD_LIBRARY_PATH}
 ENV NVIDIA_DRIVER_CAPABILITIES=all
 ENV GST_GL_API=opengl3
+ENV WHISPER_MODEL_DIR=/root/.cache/ave/models
+
+# Install pywhispercpp with CUDA support (uses system whisper.cpp libs)
+RUN GGML_CUDA=1 pip install --break-system-packages pywhispercpp
 
 # Install ave package
 WORKDIR /app

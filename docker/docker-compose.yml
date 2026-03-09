@@ -1,3 +1,6 @@
+volumes:
+  whisper-models:
+
 services:
   ave:
     build:
@@ -8,10 +11,12 @@ services:
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=all
       - DISPLAY=${DISPLAY:-}
+      - WHISPER_MODEL_DIR=/root/.cache/ave/models
     volumes:
       - ../src:/app/src
       - ../tests:/app/tests
       - ../docs:/app/docs
+      - whisper-models:/root/.cache/ave/models
       - /tmp/.X11-unix:/tmp/.X11-unix:ro
     working_dir: /app
     # Override default CMD for interactive use
@@ -22,3 +27,7 @@ services:
   test:
     extends: ave
     command: pytest -v -m "not slow"
+
+  test-all:
+    extends: ave
+    command: pytest -v --tb=short
