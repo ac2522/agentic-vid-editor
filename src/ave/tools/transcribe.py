@@ -106,18 +106,70 @@ def extract_audio_for_transcription(
         raise TranscribeError(f"Audio extraction failed: {e.stderr.decode()}") from e
 
 
+# Recommended GGML models — fast with CUDA, accurate, small footprint.
+# All use Q5_0 quantization (best speed-to-accuracy ratio).
+RECOMMENDED_MODELS = {
+    "large-v3-turbo-q5_0": {
+        "size_mb": 547,
+        "description": "Best speed-to-accuracy ratio. Oct 2024, pruned decoder (4 layers vs 32).",
+        "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo-q5_0.bin",
+    },
+    "medium-q5_0": {
+        "size_mb": 515,
+        "description": "Good accuracy, similar size to turbo. Use if turbo has issues.",
+        "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-medium-q5_0.bin",
+    },
+    "large-v3-turbo": {
+        "size_mb": 1620,
+        "description": "Full precision turbo. Use if Q5_0 quality is insufficient.",
+        "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo.bin",
+    },
+}
+
+DEFAULT_MODEL = "large-v3-turbo-q5_0"
+
+# Model cache directory — shared across projects, persists in Docker volume
+MODEL_CACHE_DIR = Path.home() / ".cache" / "ave" / "models"
+
+
+def resolve_model(model: str) -> str:
+    """Resolve a model name or path for pywhispercpp.
+
+    Accepts:
+        - A path to a .bin GGML file (returned as-is if exists)
+        - A model name like "large-v3-turbo-q5_0" (auto-downloads via pywhispercpp)
+        - A short alias like "large-v3-turbo" (maps to known model)
+
+    Returns the model identifier string for pywhispercpp.Model().
+    """
+    # Direct path to a .bin file
+    model_path = Path(model)
+    if model_path.suffix == ".bin" and model_path.exists():
+        return str(model_path)
+
+    # Check cache dir for pre-downloaded GGML files
+    cached = MODEL_CACHE_DIR / f"ggml-{model}.bin"
+    if cached.exists():
+        return str(cached)
+
+    # Pass through to pywhispercpp (it handles download)
+    return model
+
+
 def transcribe(
     audio_path: Path,
-    model_name: str = "large-v3-turbo",
+    model: str = DEFAULT_MODEL,
     language: str | None = None,
 ) -> Transcript:
     """Transcribe audio file to text with word-level timestamps.
 
-    Uses whispercpp (GGML) when available, raises TranscribeError if not installed.
+    Uses whispercpp (GGML) with CUDA acceleration when available.
+    Default model: large-v3-turbo-q5_0 (~547MB, ~6-9s per minute of audio on GPU).
 
     Args:
         audio_path: Path to WAV audio (16kHz mono recommended).
-        model_name: Whisper model name.
+        model: Model name, alias, or path to .bin GGML file.
+            Recommended: "large-v3-turbo-q5_0" (default, best speed/accuracy).
         language: Language code or None for auto-detection.
 
     Returns:
@@ -130,9 +182,10 @@ def transcribe(
     except ImportError:
         raise TranscribeError("pywhispercpp not installed. Install with: pip install pywhispercpp")
 
-    model = Model(model_name)
+    resolved = resolve_model(model)
+    m = Model(resolved)
 
-    segments_raw = model.transcribe(str(audio_path), language=language)
+    segments_raw = m.transcribe(str(audio_path), language=language)
 
     segments = []
     for seg in segments_raw:
@@ -145,10 +198,7 @@ def transcribe(
             )
         )
 
-    # Detect language (use provided or default to English)
     detected_language = language or "en"
-
-    # Get audio duration from last segment
     duration = segments[-1].end if segments else 0.0
 
     return Transcript(

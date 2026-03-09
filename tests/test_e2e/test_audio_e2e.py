@@ -162,7 +162,7 @@ class TestTranscriptionE2E:
         wav_16k = tmp_path / "tone_16k.wav"
         extract_audio_for_transcription(tone_path, wav_16k, sample_rate=16000)
 
-        result = transcribe(wav_16k, model_name="tiny", language="en")
+        result = transcribe(wav_16k, model="tiny", language="en")
 
         assert isinstance(result, Transcript)
         assert len(result.segments) >= 0  # tone likely produces 0+ segments

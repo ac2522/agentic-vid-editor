@@ -5,6 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 from urllib.parse import quote
 
+from ave.utils import fps_to_fraction
+
 import gi
 
 gi.require_version("Gst", "1.0")
@@ -50,7 +52,7 @@ class Timeline:
         for track in timeline.get_tracks():
             if track.get_property("track-type") == GES.TrackType.VIDEO:
                 # Convert fps to fraction
-                num, den = _fps_to_fraction(fps)
+                num, den = fps_to_fraction(fps)
                 caps = Gst.Caps.from_string(f"video/x-raw,framerate={num}/{den}")
                 track.set_restriction_caps(caps)
                 break
@@ -64,7 +66,6 @@ class Timeline:
         if not path.exists():
             raise TimelineError(f"XGES file not found: {path}")
 
-        timeline = GES.Timeline.new()
         uri = _path_to_uri(path)
 
         project = GES.Project.new(uri)
@@ -106,6 +107,11 @@ class Timeline:
                     clip.set_string(_CLIP_ID_META_KEY, clip_id)
                     tl._next_clip_id += 1
                 tl._clips[clip_id] = clip
+
+                # Reconstruct effect tracking for this clip
+                top_effects = clip.get_top_effects()
+                if top_effects:
+                    tl._effects[clip_id] = list(top_effects)
 
         return tl
 
@@ -193,6 +199,39 @@ class Timeline:
         # Clean up effect tracking
         self._effects.pop(clip_id, None)
 
+    def add_clip_from_source(
+        self,
+        source_clip_id: str,
+        start_ns: int,
+        inpoint_ns: int,
+        duration_ns: int,
+    ) -> str:
+        """Add a new clip using the same asset as an existing clip.
+
+        Used by split_clip to create the right portion without bypassing
+        the Timeline API.
+        """
+        source_clip = self.get_clip(source_clip_id)
+        asset = source_clip.get_asset()
+        if asset is None:
+            raise TimelineError(f"Clip {source_clip_id} has no asset")
+
+        layer = source_clip.get_layer()
+        if layer is None:
+            raise TimelineError(f"Clip {source_clip_id} has no layer")
+
+        new_clip = layer.add_asset(
+            asset,
+            start_ns,
+            inpoint_ns,
+            duration_ns,
+            GES.TrackType.UNKNOWN,
+        )
+        if new_clip is None:
+            raise TimelineError(f"Failed to add clip from {source_clip_id} at start={start_ns}")
+
+        return self.register_clip(new_clip)
+
     # --- P0-2: Index-based effect management ---
 
     def add_effect(self, clip_id: str, element_description: str) -> str:
@@ -218,7 +257,8 @@ class Timeline:
         """Remove an effect from a clip by index-based ID."""
         clip = self.get_clip(clip_id)
         effect = self._get_effect(clip_id, effect_id)
-        clip.remove(effect)
+        if not clip.remove(effect):
+            raise TimelineError(f"GES refused to remove effect {effect_id} from {clip_id}")
 
         # Remove from tracking and mark slot as None to preserve indices
         index = self._parse_effect_index(effect_id)
@@ -295,23 +335,7 @@ class Timeline:
             raise TimelineError(f"Invalid effect ID format: {effect_id}")
 
 
-def _fps_to_fraction(fps: float) -> tuple[int, int]:
-    """Convert fps float to integer numerator/denominator."""
-    # Handle common fractional frame rates
-    common = {
-        23.976: (24000, 1001),
-        23.98: (24000, 1001),
-        29.97: (30000, 1001),
-        59.94: (60000, 1001),
-    }
-    for known_fps, frac in common.items():
-        if abs(fps - known_fps) < 0.01:
-            return frac
-    # For integer frame rates
-    if fps == int(fps):
-        return (int(fps), 1)
-    # General case: multiply to get reasonable fraction
-    return (int(fps * 1000), 1000)
+_fps_to_fraction = fps_to_fraction
 
 
 def _path_to_uri(path: Path) -> str:
