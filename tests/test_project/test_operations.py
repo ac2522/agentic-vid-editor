@@ -255,3 +255,22 @@ class TestOperationsVerification:
         for cid in clip_ids:
             clip = tl.get_clip(cid)
             assert clip is not None
+
+    def test_split_clip_no_direct_ges_imports(self):
+        """split_clip in operations.py must not import GES directly (P1-2)."""
+        import ast
+        import inspect
+        from ave.project.operations import split_clip
+
+        source = inspect.getsource(split_clip)
+        tree = ast.parse(source)
+
+        # Check there are no 'import gi' or 'from gi.repository' statements
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    assert alias.name != "gi", "split_clip must not import gi directly"
+            if isinstance(node, ast.ImportFrom):
+                assert node.module != "gi.repository", (
+                    "split_clip must not import from gi.repository"
+                )

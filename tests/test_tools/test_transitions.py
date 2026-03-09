@@ -101,6 +101,32 @@ class TestTransitionParams:
         )
         assert result.type == TransitionType.WIPE_LEFT
 
+    def test_transition_exceeds_clip_b_duration(self):
+        """Transition duration must not exceed clip B's duration."""
+        from ave.tools.transitions import compute_transition, TransitionType, TransitionError
+
+        with pytest.raises(TransitionError, match="clip B"):
+            compute_transition(
+                clip_a_end_ns=5_000_000_000,
+                clip_b_start_ns=5_000_000_000,
+                transition_type=TransitionType.CROSSFADE,
+                duration_ns=2_000_000_000,
+                clip_b_duration_ns=1_000_000_000,
+            )
+
+    def test_transition_exactly_clip_b_duration(self):
+        """Transition equal to clip B duration should work."""
+        from ave.tools.transitions import compute_transition, TransitionType
+
+        result = compute_transition(
+            clip_a_end_ns=5_000_000_000,
+            clip_b_start_ns=5_000_000_000,
+            transition_type=TransitionType.CROSSFADE,
+            duration_ns=1_000_000_000,
+            clip_b_duration_ns=1_000_000_000,
+        )
+        assert result.duration_ns == 1_000_000_000
+
     def test_all_transition_types_exist(self):
         from ave.tools.transitions import TransitionType
 

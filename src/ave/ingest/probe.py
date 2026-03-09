@@ -22,7 +22,7 @@ class VideoStream:
     color_space: str | None
     color_transfer: str | None
     color_primaries: str | None
-    duration_seconds: float
+    duration_seconds: float | None
 
 
 @dataclass(frozen=True)
@@ -31,7 +31,7 @@ class AudioStream:
     sample_rate: int
     channels: int
     channel_layout: str | None
-    duration_seconds: float
+    duration_seconds: float | None
 
 
 @dataclass(frozen=True)
@@ -124,7 +124,7 @@ def _parse_video_stream(streams: list[dict]) -> VideoStream | None:
                 color_space=s.get("color_space"),
                 color_transfer=s.get("color_transfer"),
                 color_primaries=s.get("color_primaries"),
-                duration_seconds=float(s.get("duration", 0) or 0),
+                duration_seconds=float(s["duration"]) if "duration" in s else None,
             )
     return None
 
@@ -137,6 +137,6 @@ def _parse_audio_stream(streams: list[dict]) -> AudioStream | None:
                 sample_rate=int(s.get("sample_rate", 0)),
                 channels=int(s.get("channels", 0)),
                 channel_layout=s.get("channel_layout"),
-                duration_seconds=float(s.get("duration", 0) or 0),
+                duration_seconds=float(s["duration"]) if "duration" in s else None,
             )
     return None

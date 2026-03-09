@@ -138,6 +138,8 @@ def ingest(
         profile=profile,
         target_fps=project_fps if needs_conform else None,
     )
+    if not working_path.exists() or working_path.stat().st_size == 0:
+        raise TranscodeError(f"Working transcode produced empty or missing output: {working_path}")
 
     # 4. Transcode to proxy
     transcode_to_proxy(
@@ -146,6 +148,8 @@ def ingest(
         height=480,
         target_fps=project_fps if needs_conform else None,
     )
+    if not proxy_path.exists() or proxy_path.stat().st_size == 0:
+        raise TranscodeError(f"Proxy transcode produced empty or missing output: {proxy_path}")
 
     # 5. Register
     entry = AssetEntry(

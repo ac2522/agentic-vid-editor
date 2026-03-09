@@ -69,3 +69,63 @@ class TestProbe:
 
         with pytest.raises(ProbeError, match="ffprobe failed"):
             probe_media(bad_file)
+
+
+class TestProbeStreamDuration:
+    """Stream-level duration_seconds should be None when not available."""
+
+    def test_parse_video_stream_missing_duration(self):
+        """When stream has no 'duration' key, duration_seconds should be None."""
+        from ave.ingest.probe import _parse_video_stream
+
+        streams = [
+            {
+                "codec_type": "video",
+                "width": 1920,
+                "height": 1080,
+                "codec_name": "h264",
+                "pix_fmt": "yuv420p",
+                "r_frame_rate": "24/1",
+                "bits_per_raw_sample": "8",
+                # no "duration" key
+            }
+        ]
+        video = _parse_video_stream(streams)
+        assert video is not None
+        assert video.duration_seconds is None
+
+    def test_parse_audio_stream_missing_duration(self):
+        """When stream has no 'duration' key, duration_seconds should be None."""
+        from ave.ingest.probe import _parse_audio_stream
+
+        streams = [
+            {
+                "codec_type": "audio",
+                "codec_name": "aac",
+                "sample_rate": "48000",
+                "channels": 2,
+                # no "duration" key
+            }
+        ]
+        audio = _parse_audio_stream(streams)
+        assert audio is not None
+        assert audio.duration_seconds is None
+
+    def test_parse_video_stream_with_duration(self):
+        """When stream has 'duration' key, it should be parsed."""
+        from ave.ingest.probe import _parse_video_stream
+
+        streams = [
+            {
+                "codec_type": "video",
+                "width": 1920,
+                "height": 1080,
+                "codec_name": "h264",
+                "pix_fmt": "yuv420p",
+                "r_frame_rate": "24/1",
+                "bits_per_raw_sample": "8",
+                "duration": "5.0",
+            }
+        ]
+        video = _parse_video_stream(streams)
+        assert video.duration_seconds == pytest.approx(5.0)

@@ -170,6 +170,54 @@ class TestTranscribeValidation:
         validate_transcribe_input(audio)
 
 
+class TestModelResolution:
+    """Test model name/path resolution."""
+
+    def test_default_model_is_turbo_q5(self):
+        from ave.tools.transcribe import DEFAULT_MODEL
+
+        assert DEFAULT_MODEL == "large-v3-turbo-q5_0"
+
+    def test_resolve_model_passthrough(self):
+        from ave.tools.transcribe import resolve_model
+
+        assert resolve_model("large-v3-turbo-q5_0") == "large-v3-turbo-q5_0"
+
+    def test_resolve_model_bin_path(self, tmp_path: Path):
+        from ave.tools.transcribe import resolve_model
+
+        model_file = tmp_path / "ggml-custom.bin"
+        model_file.write_bytes(b"\x00" * 100)
+
+        assert resolve_model(str(model_file)) == str(model_file)
+
+    def test_resolve_model_missing_bin_passthrough(self):
+        from ave.tools.transcribe import resolve_model
+
+        # Non-existent .bin path falls through to name-based resolution
+        result = resolve_model("/nonexistent/model.bin")
+        assert result == "/nonexistent/model.bin"
+
+    def test_resolve_model_cached_file(self, tmp_path: Path, monkeypatch):
+        import ave.tools.transcribe as mod
+        from ave.tools.transcribe import resolve_model
+
+        monkeypatch.setattr(mod, "MODEL_CACHE_DIR", tmp_path)
+
+        cached = tmp_path / "ggml-medium-q5_0.bin"
+        cached.write_bytes(b"\x00" * 100)
+
+        assert resolve_model("medium-q5_0") == str(cached)
+
+    def test_recommended_models_have_required_fields(self):
+        from ave.tools.transcribe import RECOMMENDED_MODELS
+
+        for name, info in RECOMMENDED_MODELS.items():
+            assert "size_mb" in info, f"{name} missing size_mb"
+            assert "url" in info, f"{name} missing url"
+            assert info["url"].endswith(".bin"), f"{name} url should point to .bin"
+
+
 @requires_ffmpeg
 class TestExtractAudio:
     """Test audio extraction for transcription."""

@@ -500,3 +500,81 @@ class TestTimelineVerification:
 
         with pytest.raises(TimelineError, match="Failed to set property"):
             tl.set_effect_property(clip_id, fx_id, "nonexistent_prop", 1.0)
+
+    def test_remove_effect_verifies_ges_return(self):
+        """remove_effect must check GES return value (P1-1)."""
+        from ave.project.timeline import Timeline, TimelineError
+
+        tl = Timeline.create(self.project / "project.xges", fps=24.0)
+        clip_id = tl.add_clip(
+            media_path=self.clip_path,
+            layer=0,
+            start_ns=0,
+            duration_ns=2_000_000_000,
+        )
+        fx_id = tl.add_effect(clip_id, "videobalance")
+        tl.remove_effect(clip_id, fx_id)
+
+        # Removing already-removed effect must raise
+        with pytest.raises(TimelineError):
+            tl.remove_effect(clip_id, fx_id)
+
+
+# --- P1-3: Effect state reconstruction on load ---
+
+
+@requires_ges
+@requires_ffmpeg
+class TestEffectStateReconstruction:
+    """P1-3: Effects must be manageable after save/load."""
+
+    @pytest.fixture(autouse=True)
+    def _setup(self, fixtures_dir: Path, tmp_project: Path):
+        self.clip_path = fixtures_dir / "av_clip_1080p24.mp4"
+        if not self.clip_path.exists():
+            from tests.fixtures.generate import generate_av_clip
+
+            generate_av_clip(self.clip_path)
+        self.project = tmp_project
+
+    def test_effects_accessible_after_load(self):
+        """Effects added before save must be accessible after load."""
+        from ave.project.timeline import Timeline
+
+        xges_path = self.project / "project.xges"
+        tl = Timeline.create(xges_path, fps=24.0)
+        clip_id = tl.add_clip(
+            media_path=self.clip_path,
+            layer=0,
+            start_ns=0,
+            duration_ns=2_000_000_000,
+        )
+        fx_id = tl.add_effect(clip_id, "videobalance")
+        tl.set_effect_property(clip_id, fx_id, "saturation", 0.4)
+        tl.save()
+
+        tl2 = Timeline.load(xges_path)
+        # Effect must be accessible via the same clip_id and fx_id pattern
+        val = tl2.get_effect_property(clip_id, f"{clip_id}_fx_0", "saturation")
+        assert val == pytest.approx(0.4, abs=0.05)
+
+    def test_multiple_effects_reconstructed(self):
+        """Multiple effects must all be accessible after load."""
+        from ave.project.timeline import Timeline
+
+        xges_path = self.project / "project.xges"
+        tl = Timeline.create(xges_path, fps=24.0)
+        clip_id = tl.add_clip(
+            media_path=self.clip_path,
+            layer=0,
+            start_ns=0,
+            duration_ns=2_000_000_000,
+        )
+        tl.add_effect(clip_id, "videobalance")
+        tl.add_effect(clip_id, "videobalance")
+        tl.save()
+
+        tl2 = Timeline.load(xges_path)
+        # Both effects must be in the tracking list
+        effects = tl2._effects.get(clip_id, [])
+        assert len(effects) == 2

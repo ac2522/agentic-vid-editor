@@ -134,6 +134,14 @@ def compute_normalize(
             f"Normalization target {target_peak_db} dB exceeds maximum ({MAX_TARGET_DB} dB)"
         )
 
+    # Guard against silent/near-silent clips that would produce infinite gain
+    _MIN_MEANINGFUL_PEAK_DB = -120.0
+    if current_peak_db == -math.inf or current_peak_db < _MIN_MEANINGFUL_PEAK_DB:
+        raise AudioError(
+            f"Source is silent or near-silent (peak={current_peak_db} dB). "
+            f"Cannot normalize a silent signal."
+        )
+
     gain_db = target_peak_db - current_peak_db
 
     return NormalizeParams(
