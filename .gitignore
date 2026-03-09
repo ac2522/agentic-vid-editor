@@ -16,5 +16,6 @@ tests/fixtures/*.wav
 tests/fixtures/*.ts
 *.xges
 !tests/fixtures/*.xges
+plugins/*/build/
 .venv/
 .env
