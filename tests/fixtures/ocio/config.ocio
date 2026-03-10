@@ -1,0 +1,49 @@
+ocio_profile_version: 2.1
+
+environment: {}
+
+search_path: ""
+strictparsing: true
+luma: [0.2126, 0.7152, 0.0722]
+
+roles:
+  default: sRGB
+  scene_linear: Linear
+  color_timing: ACEScg
+
+displays:
+  sRGB:
+    - !<View> {name: Standard, colorspace: sRGB}
+
+active_displays: [sRGB]
+active_views: [Standard]
+
+colorspaces:
+  - !<ColorSpace>
+    name: Linear
+    family: ""
+    equalitygroup: ""
+    bitdepth: 32f
+    isdata: false
+    allocation: lg2
+    allocationvars: [-8, 5]
+
+  - !<ColorSpace>
+    name: sRGB
+    family: ""
+    equalitygroup: ""
+    bitdepth: 32f
+    isdata: false
+    allocation: uniform
+    from_scene_reference: !<ExponentWithLinearTransform> {gamma: 2.4, offset: 0.055, direction: inverse}
+
+  - !<ColorSpace>
+    name: ACEScg
+    family: ACES
+    equalitygroup: ""
+    bitdepth: 32f
+    isdata: false
+    allocation: lg2
+    allocationvars: [-8, 5]
+    from_scene_reference: !<MatrixTransform>
+      matrix: [1.0498110175, 0.0, -0.0000974845, 0.0, -0.4959030231, 1.3733130458, 0.0982400361, 0.0, 0.0, 0.0, 0.9912520182, 0.0, 0.0, 0.0, 0.0, 1.0]
