@@ -40,6 +40,24 @@ def _whisper_available() -> bool:
         return False
 
 
+def _scenedetect_available() -> bool:
+    try:
+        import scenedetect  # noqa: F401
+
+        return True
+    except ImportError:
+        return False
+
+
+def _vision_available() -> bool:
+    try:
+        import onnxruntime  # noqa: F401
+
+        return True
+    except ImportError:
+        return False
+
+
 def _gpu_available() -> bool:
     try:
         result = subprocess.run(["nvidia-smi"], capture_output=True, check=True, text=True)
@@ -53,6 +71,10 @@ requires_ffmpeg = pytest.mark.skipif(not _ffmpeg_available(), reason="FFmpeg not
 requires_ges = pytest.mark.skipif(not _ges_available(), reason="GES not available")
 requires_gpu = pytest.mark.skipif(not _gpu_available(), reason="NVIDIA GPU not available")
 requires_whisper = pytest.mark.skipif(not _whisper_available(), reason="pywhispercpp not available")
+requires_scenedetect = pytest.mark.skipif(
+    not _scenedetect_available(), reason="PySceneDetect not available"
+)
+requires_vision = pytest.mark.skipif(not _vision_available(), reason="ONNX Runtime not available")
 
 
 @pytest.fixture(scope="session")

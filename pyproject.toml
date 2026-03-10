@@ -15,6 +15,15 @@ dev = [
     "ruff>=0.9.0",
 ]
 
+vision = [
+    "onnxruntime-gpu>=1.20",
+    "numpy>=1.26",
+    "transformers>=4.49",
+]
+scene = [
+    "scenedetect[opencv]>=0.6",
+]
+
 [build-system]
 requires = ["setuptools>=75.0"]
 build-backend = "setuptools.build_meta"
@@ -28,6 +37,8 @@ markers = [
     "gpu: marks tests that require NVIDIA GPU (deselect with '-m \"not gpu\"')",
     "slow: marks tests that take >10 seconds (deselect with '-m \"not slow\"')",
     "whisper: marks tests that require pywhispercpp (deselect with '-m \"not whisper\"')",
+    "scenedetect: marks tests that require PySceneDetect",
+    "vision: marks tests that require ONNX Runtime + vision model",
 ]
 
 [tool.ruff]
