@@ -180,7 +180,9 @@ def transcribe(
     try:
         from pywhispercpp.model import Model
     except ImportError:
-        raise TranscribeError("pywhispercpp not installed. Install with: pip install pywhispercpp")
+        raise TranscribeError(
+            "Missing optional dependency 'pywhispercpp'. Install with: pip install pywhispercpp"
+        ) from None
 
     resolved = resolve_model(model)
     m = Model(resolved)

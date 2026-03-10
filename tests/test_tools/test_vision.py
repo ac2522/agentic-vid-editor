@@ -12,7 +12,6 @@ from ave.tools.vision import (
     similarity_search,
     tag_frames,
 )
-from tests.conftest import requires_vision
 
 
 class TestVisionError:
@@ -69,8 +68,8 @@ class TestFrameEmbedding:
         assert fe.frame_idx == 10
         assert len(fe.embedding) == 3
 
-    @requires_vision
     def test_embedding_array_property(self):
+        pytest.importorskip("numpy")
         fe = FrameEmbedding(
             frame_idx=0,
             timestamp_ns=0,
@@ -187,11 +186,11 @@ class TestVisualAnalysis:
         assert analysis.scenes == []
 
 
-@requires_vision
+@pytest.mark.vision
 class TestSigLIP2Backend:
     def test_embed_image_returns_list_float(self):
-        import numpy as np
-
+        np = pytest.importorskip("numpy")
+        pytest.importorskip("onnxruntime")
         from ave.tools.vision_siglip2 import SigLIP2Backend
 
         backend = SigLIP2Backend(model_name="google/siglip2-base-patch16-224")
@@ -203,6 +202,7 @@ class TestSigLIP2Backend:
         assert len(result) > 0
 
     def test_embed_text_returns_list_float(self):
+        pytest.importorskip("onnxruntime")
         from ave.tools.vision_siglip2 import SigLIP2Backend
 
         backend = SigLIP2Backend(model_name="google/siglip2-base-patch16-224")
@@ -211,8 +211,8 @@ class TestSigLIP2Backend:
         assert all(isinstance(x, float) for x in result)
 
     def test_embed_batch(self):
-        import numpy as np
-
+        np = pytest.importorskip("numpy")
+        pytest.importorskip("onnxruntime")
         from ave.tools.vision_siglip2 import SigLIP2Backend
 
         backend = SigLIP2Backend(model_name="google/siglip2-base-patch16-224")
@@ -222,8 +222,8 @@ class TestSigLIP2Backend:
         assert all(isinstance(r, list) for r in results)
 
     def test_image_text_similarity_makes_sense(self):
-        import numpy as np
-
+        np = pytest.importorskip("numpy")
+        pytest.importorskip("onnxruntime")
         from ave.tools.vision import cosine_similarity
         from ave.tools.vision_siglip2 import SigLIP2Backend
 

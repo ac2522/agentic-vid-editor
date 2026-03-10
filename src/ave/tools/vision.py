@@ -16,6 +16,8 @@ if TYPE_CHECKING:
 
 from pydantic import BaseModel
 
+from ave._compat import import_optional
+
 
 class VisionError(Exception):
     """Raised when vision operations fail."""
@@ -32,8 +34,7 @@ class FrameEmbedding(BaseModel):
     @property
     def embedding_array(self):
         """Return embedding as numpy array for vector operations."""
-        import numpy as np
-
+        np = import_optional("numpy")
         return np.array(self.embedding, dtype=np.float32)
 
 

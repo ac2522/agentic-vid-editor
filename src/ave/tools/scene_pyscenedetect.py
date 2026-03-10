@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from ave._compat import import_optional
 from ave.tools.scene import SceneBoundary, SceneError
 
 
@@ -37,6 +38,7 @@ class PySceneDetectBackend:
             SceneError: If scenedetect is not installed or detector is unknown.
         """
         try:
+            import_optional("scenedetect")
             from scenedetect import SceneManager, open_video
             from scenedetect.detectors import (
                 AdaptiveDetector,
@@ -46,8 +48,8 @@ class PySceneDetectBackend:
             )
         except ImportError:
             raise SceneError(
-                "PySceneDetect not installed. Install with: pip install scenedetect[opencv]"
-            )
+                "Missing optional dependency 'scenedetect'. Install with: pip install ave[scene]"
+            ) from None
 
         detectors = {
             "content": lambda: ContentDetector(threshold=threshold),
