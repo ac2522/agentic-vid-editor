@@ -9,9 +9,11 @@ from __future__ import annotations
 import json
 import math
 from pathlib import Path
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
 
-import numpy as np
+if TYPE_CHECKING:
+    import numpy as np
+
 from pydantic import BaseModel
 
 
@@ -28,8 +30,10 @@ class FrameEmbedding(BaseModel):
     scene_id: str | None = None
 
     @property
-    def embedding_array(self) -> np.ndarray:
+    def embedding_array(self):
         """Return embedding as numpy array for vector operations."""
+        import numpy as np
+
         return np.array(self.embedding, dtype=np.float32)
 
 
