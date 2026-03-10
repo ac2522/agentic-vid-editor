@@ -134,9 +134,10 @@ def compute_blend_params(blend_mode: BlendMode) -> BlendFuncParams:
             equation_rgb=GL_FUNC_ADD,
             equation_alpha=GL_FUNC_ADD,
         ),
+        # result = src * dst_color + dst * 0 = src * dst
         BlendMode.MULTIPLY: BlendFuncParams(
-            src_rgb=GL_ZERO,
-            dst_rgb=GL_DST_COLOR,
+            src_rgb=GL_DST_COLOR,
+            dst_rgb=GL_ZERO,
             src_alpha=GL_ONE,
             dst_alpha=GL_ONE_MINUS_SRC_ALPHA,
             equation_rgb=GL_FUNC_ADD,
@@ -150,6 +151,9 @@ def compute_blend_params(blend_mode: BlendMode) -> BlendFuncParams:
             equation_rgb=GL_FUNC_ADD,
             equation_alpha=GL_FUNC_ADD,
         ),
+        # Approximation: true overlay requires per-pixel conditional
+        # (multiply when dst < 0.5, screen otherwise). Falls back to
+        # standard alpha compositing until shader-based impl is added.
         BlendMode.OVERLAY: BlendFuncParams(
             src_rgb=GL_SRC_ALPHA,
             dst_rgb=GL_ONE_MINUS_SRC_ALPHA,
@@ -158,6 +162,8 @@ def compute_blend_params(blend_mode: BlendMode) -> BlendFuncParams:
             equation_rgb=GL_FUNC_ADD,
             equation_alpha=GL_FUNC_ADD,
         ),
+        # Approximation: true soft light requires shader math.
+        # Falls back to standard alpha compositing.
         BlendMode.SOFT_LIGHT: BlendFuncParams(
             src_rgb=GL_SRC_ALPHA,
             dst_rgb=GL_ONE_MINUS_SRC_ALPHA,

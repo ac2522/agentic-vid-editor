@@ -205,7 +205,9 @@ class TestComputeBlendParams:
         from ave.tools.compositing import BlendMode, compute_blend_params
 
         params = compute_blend_params(BlendMode.MULTIPLY)
-        assert params.dst_rgb == 0x0306  # GL_DST_COLOR
+        # result = src * dst_color + dst * 0 = src * dst
+        assert params.src_rgb == 0x0306  # GL_DST_COLOR
+        assert params.dst_rgb == 0  # GL_ZERO
 
     def test_add_mode(self):
         from ave.tools.compositing import BlendMode, compute_blend_params
