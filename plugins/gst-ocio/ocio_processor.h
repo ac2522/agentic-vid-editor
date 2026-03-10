@@ -20,11 +20,14 @@ typedef struct OcioProcessor OcioProcessor;
  * @param config_path  Path to OCIO config file, or NULL to use $OCIO env var.
  * @param src_cs       Source color space name (must not be NULL).
  * @param dst_cs       Destination color space name (must not be NULL).
+ * @param error_out    If non-NULL, receives a static error string on failure.
+ *                     The string is valid only until the next call. May be NULL.
  * @return             Opaque processor handle, or NULL on failure.
  */
 OcioProcessor* ocio_processor_new(const char* config_path,
                                   const char* src_cs,
-                                  const char* dst_cs);
+                                  const char* dst_cs,
+                                  const char** error_out);
 
 /*
  * Free an OCIO processor and all associated resources.

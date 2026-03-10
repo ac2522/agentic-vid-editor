@@ -251,21 +251,14 @@ static gboolean gst_ocio_filter_gl_start(GstGLFilter *filter) {
   }
 
   /* Create OCIO processor via C++ helper */
+  const char *ocio_err = NULL;
   self->ocio_processor = ocio_processor_new(
-      self->config_path, self->src_colorspace, self->dst_colorspace);
+      self->config_path, self->src_colorspace, self->dst_colorspace,
+      &ocio_err);
 
   if (!self->ocio_processor) {
-    GST_ERROR_OBJECT(self, "Failed to create OCIO processor");
-    return FALSE;
-  }
-
-  /* Check for errors from the C++ side */
-  const char *err = ocio_processor_get_error(
-      (OcioProcessor *)self->ocio_processor);
-  if (err) {
-    GST_ERROR_OBJECT(self, "OCIO processor error: %s", err);
-    ocio_processor_free((OcioProcessor *)self->ocio_processor);
-    self->ocio_processor = NULL;
+    GST_ERROR_OBJECT(self, "Failed to create OCIO processor: %s",
+        ocio_err ? ocio_err : "unknown error");
     return FALSE;
   }
 

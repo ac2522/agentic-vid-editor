@@ -19,6 +19,11 @@
 
 namespace OCIO = OCIO_NAMESPACE;
 
+/* Thread-local buffer for error messages from failed ocio_processor_new calls.
+ * Needed because the OcioProcessor struct is deleted on failure, so the
+ * caller cannot retrieve error_msg via ocio_processor_get_error(NULL). */
+static thread_local std::string g_last_error;
+
 struct OcioProcessor {
     OCIO::ConstConfigRcPtr config;
     OCIO::ConstProcessorRcPtr processor;
@@ -39,11 +44,22 @@ struct OcioProcessor {
 
 extern "C" {
 
+static void set_error(const char** error_out, const std::string& msg) {
+    g_last_error = msg;
+    if (error_out) {
+        *error_out = g_last_error.c_str();
+    }
+}
+
 OcioProcessor* ocio_processor_new(const char* config_path,
                                   const char* src_cs,
-                                  const char* dst_cs)
+                                  const char* dst_cs,
+                                  const char** error_out)
 {
+    if (error_out) *error_out = nullptr;
+
     if (!src_cs || !dst_cs) {
+        set_error(error_out, "src_cs and dst_cs must not be NULL");
         return nullptr;
     }
 
@@ -61,7 +77,7 @@ OcioProcessor* ocio_processor_new(const char* config_path,
         }
 
         if (!proc->config) {
-            proc->error_msg = "Failed to load OCIO config";
+            set_error(error_out, "Failed to load OCIO config");
             delete proc;
             return nullptr;
         }
@@ -69,10 +85,11 @@ OcioProcessor* ocio_processor_new(const char* config_path,
         /* Create processor for color space transform */
         proc->processor = proc->config->getProcessor(src_cs, dst_cs);
         if (!proc->processor) {
-            proc->error_msg = "Failed to create OCIO processor for transform: ";
-            proc->error_msg += src_cs;
-            proc->error_msg += " -> ";
-            proc->error_msg += dst_cs;
+            std::string msg = "Failed to create OCIO processor for transform: ";
+            msg += src_cs;
+            msg += " -> ";
+            msg += dst_cs;
+            set_error(error_out, msg);
             delete proc;
             return nullptr;
         }
@@ -80,7 +97,7 @@ OcioProcessor* ocio_processor_new(const char* config_path,
         /* Get GPU processor (optimized for GPU execution) */
         proc->gpu_processor = proc->processor->getDefaultGPUProcessor();
         if (!proc->gpu_processor) {
-            proc->error_msg = "Failed to get GPU processor";
+            set_error(error_out, "Failed to get GPU processor");
             delete proc;
             return nullptr;
         }
@@ -130,13 +147,15 @@ OcioProcessor* ocio_processor_new(const char* config_path,
         return proc;
 
     } catch (const OCIO::Exception& e) {
-        proc->error_msg = "OCIO exception: ";
-        proc->error_msg += e.what();
+        std::string msg = "OCIO exception: ";
+        msg += e.what();
+        set_error(error_out, msg);
         delete proc;
         return nullptr;
     } catch (const std::exception& e) {
-        proc->error_msg = "C++ exception: ";
-        proc->error_msg += e.what();
+        std::string msg = "C++ exception: ";
+        msg += e.what();
+        set_error(error_out, msg);
         delete proc;
         return nullptr;
     }
