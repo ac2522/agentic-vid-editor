@@ -131,13 +131,10 @@ def parse_cube_lut(path: str) -> CubeLUT:
                 parts = line.split()
                 if len(parts) == 3:
                     try:
-                        table.append(
-                            (float(parts[0]), float(parts[1]), float(parts[2]))
-                        )
+                        table.append((float(parts[0]), float(parts[1]), float(parts[2])))
                     except ValueError:
                         raise ColorError(
-                            f"LUT file '{path}': cannot parse data row "
-                            f"{len(table) + 1}: '{line}'"
+                            f"LUT file '{path}': cannot parse data row {len(table) + 1}: '{line}'"
                         ) from None
 
     except OSError as exc:
@@ -146,11 +143,9 @@ def parse_cube_lut(path: str) -> CubeLUT:
     if size is None:
         raise ColorError(f"LUT file missing LUT_3D_SIZE or LUT_1D_SIZE: {path}")
 
-    expected = size ** 3 if is_3d else size
+    expected = size**3 if is_3d else size
     if len(table) != expected:
-        raise ColorError(
-            f"LUT table size mismatch: expected {expected} entries, got {len(table)}"
-        )
+        raise ColorError(f"LUT table size mismatch: expected {expected} entries, got {len(table)}")
 
     return CubeLUT(
         title=title,
@@ -176,8 +171,7 @@ def _validate_rgb_range(
         if v < lo or v > hi:
             channel = ("R", "G", "B")[i]
             raise ColorError(
-                f"{name} channel {channel} value {v} is outside "
-                f"allowed range [{lo}, {hi}]"
+                f"{name} channel {channel} value {v} is outside allowed range [{lo}, {hi}]"
             )
 
 
@@ -209,9 +203,7 @@ def compute_color_grade(
     _validate_rgb_range(offset, "offset", -1.0, 1.0)
 
     if saturation < 0.0 or saturation > 4.0:
-        raise ColorError(
-            f"saturation {saturation} is outside allowed range [0.0, 4.0]"
-        )
+        raise ColorError(f"saturation {saturation} is outside allowed range [0.0, 4.0]")
 
     return ColorGradeParams(
         lift=lift,
@@ -250,18 +242,14 @@ def compute_cdl(
     for i, v in enumerate(slope):
         if v < 0.0:
             channel = ("R", "G", "B")[i]
-            raise ColorError(
-                f"slope channel {channel} value {v} is negative (must be >= 0.0)"
-            )
+            raise ColorError(f"slope channel {channel} value {v} is negative (must be >= 0.0)")
 
     _validate_rgb_range(offset, "offset", -1.0, 1.0)
 
     for i, v in enumerate(power):
         if v <= 0.0:
             channel = ("R", "G", "B")[i]
-            raise ColorError(
-                f"power channel {channel} value {v} must be > 0.0"
-            )
+            raise ColorError(f"power channel {channel} value {v} must be > 0.0")
 
     if saturation < 0.0:
         raise ColorError(f"saturation {saturation} must be >= 0.0")
@@ -392,14 +380,10 @@ def compute_lut_application(
         raise ColorError(f"LUT file not found: {lut_path}")
 
     if not lut_path.lower().endswith(".cube"):
-        raise ColorError(
-            f"LUT file must have .cube extension, got: {lut_path}"
-        )
+        raise ColorError(f"LUT file must have .cube extension, got: {lut_path}")
 
     if intensity < 0.0 or intensity > 1.0:
-        raise ColorError(
-            f"intensity {intensity} is outside allowed range [0.0, 1.0]"
-        )
+        raise ColorError(f"intensity {intensity} is outside allowed range [0.0, 1.0]")
 
     return LUTParams(path=lut_path, intensity=intensity)
 

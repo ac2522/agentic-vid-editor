@@ -26,7 +26,7 @@ class TestParseCubeLUT:
 
         lut_file = tmp_path / "test.cube"
         lut_file.write_text(
-            "TITLE \"Test LUT\"\n"
+            'TITLE "Test LUT"\n'
             "LUT_3D_SIZE 2\n"
             "DOMAIN_MIN 0.0 0.0 0.0\n"
             "DOMAIN_MAX 1.0 1.0 1.0\n"
@@ -53,12 +53,7 @@ class TestParseCubeLUT:
         from ave.tools.color import parse_cube_lut
 
         lut_file = tmp_path / "test1d.cube"
-        lut_file.write_text(
-            "LUT_1D_SIZE 3\n"
-            "0.0 0.0 0.0\n"
-            "0.5 0.5 0.5\n"
-            "1.0 1.0 1.0\n"
-        )
+        lut_file.write_text("LUT_1D_SIZE 3\n0.0 0.0 0.0\n0.5 0.5 0.5\n1.0 1.0 1.0\n")
 
         result = parse_cube_lut(str(lut_file))
         assert result.size == 3
@@ -102,13 +97,7 @@ class TestParseCubeLUT:
         from ave.tools.color import parse_cube_lut, ColorError
 
         lut_file = tmp_path / "short.cube"
-        lut_file.write_text(
-            "LUT_3D_SIZE 2\n"
-            "0.0 0.0 0.0\n"
-            "1.0 0.0 0.0\n"
-            "0.0 1.0 0.0\n"
-            "1.0 1.0 0.0\n"
-        )
+        lut_file.write_text("LUT_3D_SIZE 2\n0.0 0.0 0.0\n1.0 0.0 0.0\n0.0 1.0 0.0\n1.0 1.0 0.0\n")
 
         with pytest.raises(ColorError, match="mismatch"):
             parse_cube_lut(str(lut_file))

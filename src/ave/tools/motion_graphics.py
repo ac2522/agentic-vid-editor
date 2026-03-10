@@ -59,9 +59,7 @@ def _validate_color(color: tuple[int, int, int, int], label: str) -> None:
         raise MotionGraphicsError(f"Color must have 4 components (RGBA), got {len(color)}")
     for i, c in enumerate(color):
         if c < 0 or c > 255:
-            raise MotionGraphicsError(
-                f"Color component {i} of {label} must be 0-255, got {c}"
-            )
+            raise MotionGraphicsError(f"Color component {i} of {label} must be 0-255, got {c}")
 
 
 def compute_text_overlay(
