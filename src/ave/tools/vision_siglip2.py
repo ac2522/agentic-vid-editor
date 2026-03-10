@@ -6,9 +6,13 @@ Requires: transformers, torch, Pillow.
 
 from __future__ import annotations
 
-import numpy as np
+from typing import TYPE_CHECKING
 
+from ave._compat import import_optional
 from ave.tools.vision import VisionError
+
+if TYPE_CHECKING:
+    import numpy as np
 
 
 class SigLIP2Backend:
@@ -22,7 +26,9 @@ class SigLIP2Backend:
         try:
             from transformers import AutoModel, AutoProcessor
         except ImportError:
-            raise VisionError("transformers not installed. Install with: pip install transformers")
+            raise VisionError(
+                "Missing optional dependency 'transformers'. Install with: pip install ave[vision]"
+            ) from None
 
         self._processor = AutoProcessor.from_pretrained(model_name)
         self._model = AutoModel.from_pretrained(model_name)
@@ -46,8 +52,8 @@ class SigLIP2Backend:
         with torch.no_grad():
             outputs = self._model.get_image_features(**inputs)
 
+        np = import_optional("numpy")
         embedding = outputs[0].cpu().numpy()
-        # L2 normalize
         norm = np.linalg.norm(embedding)
         if norm > 0:
             embedding = embedding / norm
@@ -64,6 +70,7 @@ class SigLIP2Backend:
         """
         import torch
 
+        np = import_optional("numpy")
         inputs = self._processor(text=[text], return_tensors="pt", padding=True)
 
         with torch.no_grad():
@@ -87,6 +94,7 @@ class SigLIP2Backend:
         import torch
         from PIL import Image
 
+        np = import_optional("numpy")
         pil_images = [Image.fromarray(img) for img in images]
         inputs = self._processor(images=pil_images, return_tensors="pt")
 
@@ -94,7 +102,6 @@ class SigLIP2Backend:
             outputs = self._model.get_image_features(**inputs)
 
         embeddings = outputs.cpu().numpy()
-        # L2 normalize each row
         norms = np.linalg.norm(embeddings, axis=1, keepdims=True)
         norms = np.where(norms == 0, 1, norms)
         embeddings = embeddings / norms
