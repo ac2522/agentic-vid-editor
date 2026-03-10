@@ -1,7 +1,7 @@
 """E2E tests for color pipeline — requires Docker with GES and GPU."""
+
 import json
 import subprocess
-from pathlib import Path
 
 import pytest
 
@@ -21,7 +21,7 @@ class TestColorE2E:
         # Create a simple warm-shift LUT
         lut_path = tmp_path / "warm.cube"
         lut_path.write_text(
-            "TITLE \"Warm Shift\"\n"
+            'TITLE "Warm Shift"\n'
             "LUT_3D_SIZE 2\n"
             "0.1 0.05 0.0\n"  # blacks get warm
             "1.0 0.05 0.0\n"
@@ -57,7 +57,8 @@ class TestColorE2E:
         # Probe output
         result = subprocess.run(
             ["ffprobe", "-v", "quiet", "-print_format", "json", "-show_streams", str(output)],
-            capture_output=True, text=True
+            capture_output=True,
+            text=True,
         )
         info = json.loads(result.stdout)
         video = [s for s in info["streams"] if s["codec_type"] == "video"][0]
@@ -77,7 +78,8 @@ class TestColorE2E:
 
         clip_id = tl.add_clip(src, duration_ns=2_000_000_000)
         apply_color_grade(
-            tl, clip_id,
+            tl,
+            clip_id,
             lift=(0.05, 0.0, -0.05),
             gamma=(1.0, 1.0, 1.0),
             gain=(1.1, 1.0, 0.9),
@@ -107,7 +109,8 @@ class TestColorE2E:
 
         clip_id = tl.add_clip(src, duration_ns=2_000_000_000)
         apply_cdl(
-            tl, clip_id,
+            tl,
+            clip_id,
             slope=(1.1, 1.0, 0.9),
             offset=(0.01, 0.0, -0.01),
             power=(1.0, 1.0, 1.0),
@@ -136,13 +139,15 @@ class TestColorE2E:
 
         clip_id = tl.add_clip(src, duration_ns=2_000_000_000)
         fx1 = apply_color_grade(
-            tl, clip_id,
+            tl,
+            clip_id,
             lift=(0.0, 0.0, 0.0),
             gamma=(1.0, 1.0, 1.0),
             gain=(1.2, 1.0, 0.8),
         )
         fx2 = apply_cdl(
-            tl, clip_id,
+            tl,
+            clip_id,
             slope=(1.0, 1.0, 1.0),
             offset=(0.0, 0.0, 0.0),
             power=(1.0, 1.0, 1.0),
@@ -163,7 +168,8 @@ class TestColorE2E:
 
         clip_id = tl.add_clip(src, duration_ns=2_000_000_000)
         apply_color_grade(
-            tl, clip_id,
+            tl,
+            clip_id,
             lift=(0.05, 0.0, -0.05),
             gamma=(1.0, 1.0, 1.0),
             gain=(1.0, 1.0, 1.0),

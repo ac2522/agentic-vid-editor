@@ -1,7 +1,7 @@
 """Tests for color GES operations layer."""
+
 import pytest
-from unittest.mock import MagicMock, patch
-from pathlib import Path
+from unittest.mock import MagicMock
 
 
 class TestApplyLut:
@@ -61,7 +61,8 @@ class TestApplyColorGrade:
         timeline = MagicMock()
         with pytest.raises(ColorError):
             apply_color_grade(
-                timeline, "clip_0000",
+                timeline,
+                "clip_0000",
                 lift=(5.0, 0.0, 0.0),  # out of range
                 gamma=(1.0, 1.0, 1.0),
                 gain=(1.0, 1.0, 1.0),
@@ -74,7 +75,8 @@ class TestApplyColorGrade:
         timeline = MagicMock()
         timeline.add_effect.return_value = "clip_0000_fx_0"
         apply_color_grade(
-            timeline, "clip_0000",
+            timeline,
+            "clip_0000",
             lift=(0.0, 0.0, 0.0),
             gamma=(1.0, 1.0, 1.0),
             gain=(1.0, 1.0, 1.0),
@@ -98,7 +100,8 @@ class TestApplyCDL:
         timeline = MagicMock()
         with pytest.raises(ColorError):
             apply_cdl(
-                timeline, "clip_0000",
+                timeline,
+                "clip_0000",
                 slope=(-1.0, 1.0, 1.0),
                 offset=(0.0, 0.0, 0.0),
                 power=(1.0, 1.0, 1.0),
@@ -111,7 +114,8 @@ class TestApplyCDL:
         timeline = MagicMock()
         timeline.add_effect.return_value = "clip_0000_fx_0"
         apply_cdl(
-            timeline, "clip_0000",
+            timeline,
+            "clip_0000",
             slope=(1.0, 1.0, 1.0),
             offset=(0.0, 0.0, 0.0),
             power=(1.0, 1.0, 1.0),
