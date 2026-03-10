@@ -1,5 +1,6 @@
 volumes:
   whisper-models:
+  vision-models:
 
 services:
   ave:
@@ -12,11 +13,13 @@ services:
       - NVIDIA_DRIVER_CAPABILITIES=all
       - DISPLAY=${DISPLAY:-}
       - WHISPER_MODEL_DIR=/root/.cache/ave/models
+      - HF_HOME=/root/.cache/huggingface
     volumes:
       - ../src:/app/src
       - ../tests:/app/tests
       - ../docs:/app/docs
       - whisper-models:/root/.cache/ave/models
+      - vision-models:/root/.cache/huggingface
       - /tmp/.X11-unix:/tmp/.X11-unix:ro
     working_dir: /app
     # Override default CMD for interactive use
