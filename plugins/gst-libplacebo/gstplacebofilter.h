@@ -5,6 +5,7 @@
 #include <libplacebo/opengl.h>
 #include <libplacebo/renderer.h>
 #include <libplacebo/log.h>
+#include <libplacebo/shaders/lut.h>
 
 G_BEGIN_DECLS
 
@@ -23,6 +24,12 @@ struct _GstPlaceboFilter {
 
   /* Properties */
   gchar *lut_path;
+  gdouble intensity;
+  gchar *src_colorspace;
+  gchar *dst_colorspace;
+
+  /* Parsed LUT data */
+  struct pl_custom_lut *custom_lut;
 };
 
 G_END_DECLS
