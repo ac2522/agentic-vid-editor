@@ -69,6 +69,7 @@ class TestFrameEmbedding:
         assert fe.frame_idx == 10
         assert len(fe.embedding) == 3
 
+    @requires_vision
     def test_embedding_array_property(self):
         fe = FrameEmbedding(
             frame_idx=0,
