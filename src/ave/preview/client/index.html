@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AVE Preview</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, sans-serif; background: #1a1a2e; color: #e0e0e0; }
+  #app { max-width: 960px; margin: 0 auto; padding: 1rem; }
+  h1 { font-size: 1.2rem; margin-bottom: 0.5rem; color: #8be9fd; }
+  #preview-area { position: relative; background: #000; aspect-ratio: 16/9; margin-bottom: 0.5rem; }
+  #preview-area video, #preview-area canvas {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  }
+  canvas { display: none; }
+  canvas.active { display: block; }
+  #controls { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0; }
+  #controls button {
+    background: #16213e; border: 1px solid #0f3460; color: #e0e0e0;
+    padding: 0.4rem 0.8rem; cursor: pointer; border-radius: 4px;
+  }
+  #controls button:hover { background: #0f3460; }
+  #seek { flex: 1; }
+  #timecode { font-family: monospace; min-width: 8ch; text-align: right; }
+  #status {
+    background: #16213e; border: 1px solid #0f3460; border-radius: 4px;
+    padding: 0.5rem; font-size: 0.85rem; margin-top: 0.5rem;
+  }
+  #status span { margin-right: 1rem; }
+  .connected { color: #50fa7b; }
+  .disconnected { color: #ff5555; }
+</style>
+</head>
+<body>
+<div id="app">
+  <h1>AVE Preview</h1>
+  <div id="preview-area">
+    <video id="video" muted></video>
+    <canvas id="scrub-canvas"></canvas>
+  </div>
+  <div id="controls">
+    <button id="btn-play" title="Play">&#9654;</button>
+    <button id="btn-pause" title="Pause">&#9646;&#9646;</button>
+    <input id="seek" type="range" min="0" max="1000" value="0">
+    <span id="timecode">00:00:00.000</span>
+  </div>
+  <div id="status">
+    <span id="ws-status" class="disconnected">WS: disconnected</span>
+    <span id="seg-total">Total: -</span>
+    <span id="seg-clean">Clean: -</span>
+    <span id="seg-dirty">Dirty: -</span>
+    <span id="seg-rendering">Rendering: -</span>
+  </div>
+</div>
+<script>
+(function() {
+  const video = document.getElementById('video');
+  const canvas = document.getElementById('scrub-canvas');
+  const ctx = canvas.getContext('2d');
+  const seekBar = document.getElementById('seek');
+  const timecodeEl = document.getElementById('timecode');
+  const wsStatusEl = document.getElementById('ws-status');
+  const btnPlay = document.getElementById('btn-play');
+  const btnPause = document.getElementById('btn-pause');
+
+  let ws = null;
+  let durationNs = 15000000000; // default 15s, updated from status
+  let scrubbing = false;
+
+  function formatTimecode(ns) {
+    const totalMs = Math.floor(ns / 1000000);
+    const h = String(Math.floor(totalMs / 3600000)).padStart(2, '0');
+    const m = String(Math.floor((totalMs % 3600000) / 60000)).padStart(2, '0');
+    const s = String(Math.floor((totalMs % 60000) / 1000)).padStart(2, '0');
+    const ms = String(totalMs % 1000).padStart(3, '0');
+    return `${h}:${m}:${s}.${ms}`;
+  }
+
+  function connectWs() {
+    const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    ws = new WebSocket(`${proto}//${location.host}/ws`);
+    ws.onopen = () => {
+      wsStatusEl.textContent = 'WS: connected';
+      wsStatusEl.className = 'connected';
+    };
+    ws.onclose = () => {
+      wsStatusEl.textContent = 'WS: disconnected';
+      wsStatusEl.className = 'disconnected';
+      setTimeout(connectWs, 2000);
+    };
+    ws.onmessage = (ev) => {
+      const msg = JSON.parse(ev.data);
+      if (msg.type === 'frame') {
+        showFrame(msg.data);
+      } else if (msg.type === 'invalidation') {
+        fetchStatus();
+      }
+    };
+  }
+
+  function showFrame(b64) {
+    const img = new Image();
+    img.onload = () => {
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx.drawImage(img, 0, 0);
+      canvas.classList.add('active');
+    };
+    img.src = 'data:image/jpeg;base64,' + b64;
+  }
+
+  function requestFrame(ns) {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: 'frame', timestamp_ns: ns }));
+    }
+  }
+
+  function sendPlayback(state, posNs) {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: 'playback', state: state, position_ns: posNs }));
+    }
+  }
+
+  async function fetchStatus() {
+    try {
+      const resp = await fetch('/api/status');
+      const data = await resp.json();
+      document.getElementById('seg-total').textContent = 'Total: ' + data.total;
+      document.getElementById('seg-clean').textContent = 'Clean: ' + data.clean;
+      document.getElementById('seg-dirty').textContent = 'Dirty: ' + data.dirty;
+      document.getElementById('seg-rendering').textContent = 'Rendering: ' + data.rendering;
+    } catch(e) { /* ignore */ }
+  }
+
+  seekBar.addEventListener('input', () => {
+    scrubbing = true;
+    canvas.classList.add('active');
+    const ns = Math.round((seekBar.value / 1000) * durationNs);
+    timecodeEl.textContent = formatTimecode(ns);
+    requestFrame(ns);
+  });
+
+  seekBar.addEventListener('change', () => { scrubbing = false; });
+
+  btnPlay.addEventListener('click', () => {
+    video.play();
+    canvas.classList.remove('active');
+    sendPlayback('playing', 0);
+  });
+
+  btnPause.addEventListener('click', () => {
+    video.pause();
+    sendPlayback('paused', Math.round(video.currentTime * 1e9));
+  });
+
+  video.addEventListener('timeupdate', () => {
+    if (!scrubbing) {
+      const ns = Math.round(video.currentTime * 1e9);
+      timecodeEl.textContent = formatTimecode(ns);
+      seekBar.value = Math.round((ns / durationNs) * 1000);
+    }
+  });
+
+  connectWs();
+  fetchStatus();
+  setInterval(fetchStatus, 5000);
+})();
+</script>
+</body>
+</html>
