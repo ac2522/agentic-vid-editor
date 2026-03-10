@@ -1,4 +1,4 @@
-"""Unit tests for vision tools — data models and pure math."""
+"""Unit tests for vision tools — data models, pure math, and backends."""
 
 import pytest
 
@@ -12,6 +12,7 @@ from ave.tools.vision import (
     similarity_search,
     tag_frames,
 )
+from tests.conftest import requires_vision
 
 
 class TestVisionError:
@@ -183,3 +184,60 @@ class TestVisualAnalysis:
         assert analysis.frame_embeddings == []
         assert analysis.tags == []
         assert analysis.scenes == []
+
+
+@requires_vision
+class TestSigLIP2Backend:
+    def test_embed_image_returns_list_float(self):
+        import numpy as np
+
+        from ave.tools.vision_siglip2 import SigLIP2Backend
+
+        backend = SigLIP2Backend(model_name="google/siglip2-base-patch16-224")
+        # Create a synthetic 224x224 RGB image
+        image = np.random.randint(0, 255, (224, 224, 3), dtype=np.uint8)
+        result = backend.embed_image(image)
+        assert isinstance(result, list)
+        assert all(isinstance(x, float) for x in result)
+        assert len(result) > 0
+
+    def test_embed_text_returns_list_float(self):
+        from ave.tools.vision_siglip2 import SigLIP2Backend
+
+        backend = SigLIP2Backend(model_name="google/siglip2-base-patch16-224")
+        result = backend.embed_text("a person walking outdoors")
+        assert isinstance(result, list)
+        assert all(isinstance(x, float) for x in result)
+
+    def test_embed_batch(self):
+        import numpy as np
+
+        from ave.tools.vision_siglip2 import SigLIP2Backend
+
+        backend = SigLIP2Backend(model_name="google/siglip2-base-patch16-224")
+        images = [np.random.randint(0, 255, (224, 224, 3), dtype=np.uint8) for _ in range(3)]
+        results = backend.embed_batch(images)
+        assert len(results) == 3
+        assert all(isinstance(r, list) for r in results)
+
+    def test_image_text_similarity_makes_sense(self):
+        import numpy as np
+
+        from ave.tools.vision import cosine_similarity
+        from ave.tools.vision_siglip2 import SigLIP2Backend
+
+        backend = SigLIP2Backend(model_name="google/siglip2-base-patch16-224")
+
+        # Red image
+        red_image = np.zeros((224, 224, 3), dtype=np.uint8)
+        red_image[:, :, 0] = 255
+
+        red_embedding = backend.embed_image(red_image)
+        red_text = backend.embed_text("a red image")
+        blue_text = backend.embed_text("a blue image")
+
+        sim_red = cosine_similarity(red_embedding, red_text)
+        sim_blue = cosine_similarity(red_embedding, blue_text)
+
+        # Red image should be more similar to "red" text than "blue" text
+        assert sim_red > sim_blue
