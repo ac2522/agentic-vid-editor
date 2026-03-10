@@ -100,6 +100,15 @@ ENV WHISPER_MODEL_DIR=/root/.cache/ave/models
 # Install pywhispercpp with CUDA support (uses system whisper.cpp libs)
 RUN GGML_CUDA=1 pip install --break-system-packages pywhispercpp
 
+# Install scene detection and vision dependencies
+RUN pip install --break-system-packages \
+    "scenedetect[opencv]>=0.6" \
+    "onnxruntime-gpu>=1.20" \
+    "transformers>=4.49" \
+    "numpy>=1.26" \
+    "Pillow>=10.0" \
+    "torch>=2.0"
+
 # Install ave package
 WORKDIR /app
 COPY pyproject.toml .
