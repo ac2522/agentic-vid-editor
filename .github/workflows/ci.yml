@@ -26,7 +26,7 @@ jobs:
       - name: Set up venv with system packages
         run: |
           python3 -m venv --system-site-packages .venv
-          .venv/bin/pip install pydantic pytest pytest-cov ruff
+          .venv/bin/pip install pydantic pytest pytest-cov ruff==0.15.5
           .venv/bin/pip install -e . --no-deps
 
       - name: Lint with ruff
@@ -46,7 +46,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install ruff
-        run: pip install ruff>=0.9.0
+        run: pip install ruff==0.15.5
 
       - name: Ruff check
         run: ruff check src/ tests/
