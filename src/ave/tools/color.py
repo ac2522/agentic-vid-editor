@@ -135,7 +135,10 @@ def parse_cube_lut(path: str) -> CubeLUT:
                             (float(parts[0]), float(parts[1]), float(parts[2]))
                         )
                     except ValueError:
-                        pass
+                        raise ColorError(
+                            f"LUT file '{path}': cannot parse data row "
+                            f"{len(table) + 1}: '{line}'"
+                        ) from None
 
     except OSError as exc:
         raise ColorError(f"Cannot read LUT file: {exc}") from exc

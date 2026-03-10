@@ -79,6 +79,40 @@ class TestParseCubeLUT:
         with pytest.raises(ColorError):
             parse_cube_lut(str(lut_file))
 
+    def test_malformed_data_row_raises(self, tmp_path):
+        from ave.tools.color import parse_cube_lut, ColorError
+
+        lut_file = tmp_path / "malformed.cube"
+        lut_file.write_text(
+            "LUT_3D_SIZE 2\n"
+            "0.0 0.0 0.0\n"
+            "1.0 0.0 0.0\n"
+            "abc def ghi\n"  # unparseable row
+            "1.0 1.0 0.0\n"
+            "0.0 0.0 1.0\n"
+            "1.0 0.0 1.0\n"
+            "0.0 1.0 1.0\n"
+            "1.0 1.0 1.0\n"
+        )
+
+        with pytest.raises(ColorError, match="cannot parse data row"):
+            parse_cube_lut(str(lut_file))
+
+    def test_table_size_mismatch_raises(self, tmp_path):
+        from ave.tools.color import parse_cube_lut, ColorError
+
+        lut_file = tmp_path / "short.cube"
+        lut_file.write_text(
+            "LUT_3D_SIZE 2\n"
+            "0.0 0.0 0.0\n"
+            "1.0 0.0 0.0\n"
+            "0.0 1.0 0.0\n"
+            "1.0 1.0 0.0\n"
+        )
+
+        with pytest.raises(ColorError, match="mismatch"):
+            parse_cube_lut(str(lut_file))
+
     def test_custom_domain(self, tmp_path):
         from ave.tools.color import parse_cube_lut
 
