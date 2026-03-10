@@ -1,7 +1,6 @@
 """E2E tests for color pipeline — requires Docker with GES and GPU."""
 import json
 import subprocess
-from pathlib import Path
 
 import pytest
 
