@@ -5,7 +5,7 @@ project('gst-ocio', 'c', 'cpp',
 gst_dep = dependency('gstreamer-1.0', version : '>= 1.28.1')
 gst_gl_dep = dependency('gstreamer-gl-1.0', version : '>= 1.28.1')
 gst_video_dep = dependency('gstreamer-video-1.0', version : '>= 1.28.1')
-ocio_dep = dependency('OpenColorIO', version : '>= 2.3')
+ocio_dep = dependency('OpenColorIO', version : '>= 2.5.1')
 
 gstocio = shared_library('gstocio',
   'gstociofilter.c',
