@@ -6,6 +6,8 @@
 #include <libplacebo/renderer.h>
 #include <libplacebo/log.h>
 #include <libplacebo/shaders/lut.h>
+#include <libplacebo/shaders/custom.h>
+#include <libplacebo/dispatch.h>
 
 G_BEGIN_DECLS
 
@@ -21,6 +23,8 @@ struct _GstPlaceboFilter {
   pl_renderer pl_renderer;
   pl_tex src_tex;
   pl_tex dst_tex;
+  pl_dispatch pl_dispatch;
+  pl_tex blend_tex;  /* temporary texture for intensity blending */
 
   /* Properties */
   gchar *lut_path;

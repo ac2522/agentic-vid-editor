@@ -154,6 +154,7 @@ static gboolean gst_placebo_filter_gl_start(GstGLFilter *filter) {
   }
 
   self->pl_renderer = pl_renderer_create(self->pl_log, self->pl_gl->gpu);
+  self->pl_dispatch = pl_dispatch_create(self->pl_log, self->pl_gl->gpu);
 
   GST_INFO_OBJECT(self, "libplacebo OpenGL backend initialized (GPU: %s)",
       self->pl_gl->gpu->glsl.version ? "yes" : "no");
@@ -179,6 +180,8 @@ static void gst_placebo_filter_gl_stop(GstGLFilter *filter) {
 
   pl_tex_destroy(self->pl_gl->gpu, &self->src_tex);
   pl_tex_destroy(self->pl_gl->gpu, &self->dst_tex);
+  pl_tex_destroy(self->pl_gl->gpu, &self->blend_tex);
+  pl_dispatch_destroy(&self->pl_dispatch);
   pl_renderer_destroy(&self->pl_renderer);
   pl_opengl_destroy(&self->pl_gl);
   pl_log_destroy(&self->pl_log);
@@ -218,6 +221,69 @@ static gboolean gst_placebo_filter_filter_texture(GstGLFilter *filter,
     return FALSE;
   }
 
+  gdouble intensity = self->intensity;
+  gboolean need_blend = (intensity > 0.0 && intensity < 1.0
+                          && self->custom_lut != NULL);
+
+  /*
+   * Fast path: intensity <= 0.0 or no LUT means passthrough.
+   * Render source to output without any LUT applied.
+   */
+  if (intensity <= 0.0 || !self->custom_lut) {
+    struct pl_frame img = {
+        .num_planes = 1,
+        .planes = {{ .texture = src,
+                      .components = 4,
+                      .component_mapping = {0, 1, 2, 3} }},
+        .repr = pl_color_repr_sdtv,
+        .color = pl_color_space_srgb,
+    };
+    struct pl_frame target = {
+        .num_planes = 1,
+        .planes = {{ .texture = dst,
+                      .components = 4,
+                      .component_mapping = {0, 1, 2, 3} }},
+        .repr = pl_color_repr_sdtv,
+        .color = pl_color_space_srgb,
+    };
+    struct pl_render_params params = pl_render_default_params;
+
+    GST_TRACE_OBJECT(self, "Intensity %.2f — passthrough (no LUT)", intensity);
+
+    gboolean ok = pl_render_image(self->pl_renderer, &img, &target, &params);
+    if (!ok)
+      GST_ERROR_OBJECT(self, "pl_render_image() failed (passthrough)");
+    pl_tex_destroy(self->pl_gl->gpu, &src);
+    pl_tex_destroy(self->pl_gl->gpu, &dst);
+    return ok;
+  }
+
+  /*
+   * For blending (0 < intensity < 1), we need a temporary texture to hold
+   * the LUT-applied result, then mix original and LUT result together.
+   * For full intensity (>= 1.0), render LUT directly to the output.
+   */
+  pl_tex lut_target = dst;  /* default: render LUT result straight to output */
+
+  if (need_blend) {
+    /* Ensure the temporary blend texture exists with the right dimensions */
+    pl_fmt fmt = src->params.format;
+    gboolean ok = pl_tex_recreate(self->pl_gl->gpu, &self->blend_tex,
+        pl_tex_params(
+            .w = w, .h = h,
+            .format = fmt,
+            .sampleable = true,
+            .renderable = true,
+        ));
+    if (!ok) {
+      GST_ERROR_OBJECT(self, "Failed to create blend temp texture");
+      pl_tex_destroy(self->pl_gl->gpu, &src);
+      pl_tex_destroy(self->pl_gl->gpu, &dst);
+      return FALSE;
+    }
+    lut_target = self->blend_tex;  /* render LUT result to temp texture */
+  }
+
   /* Set up source frame */
   struct pl_frame img = {
       .num_planes = 1,
@@ -228,52 +294,124 @@ static gboolean gst_placebo_filter_filter_texture(GstGLFilter *filter,
       .color = pl_color_space_srgb,
   };
 
-  /* Set up target frame */
+  /* Set up target frame — goes to blend_tex when blending, dst otherwise */
   struct pl_frame target = {
       .num_planes = 1,
-      .planes = {{ .texture = dst,
+      .planes = {{ .texture = lut_target,
                     .components = 4,
                     .component_mapping = {0, 1, 2, 3} }},
       .repr = pl_color_repr_sdtv,
       .color = pl_color_space_srgb,
   };
 
-  /* Configure render params with LUT if available */
+  /* Configure render params with LUT */
   struct pl_render_params params = pl_render_default_params;
+  params.lut = self->custom_lut;
+  params.lut_type = PL_LUT_NORMALIZED;
+  GST_TRACE_OBJECT(self, "Applying .cube LUT to frame (intensity=%.2f)",
+      intensity);
 
-  if (self->custom_lut) {
-    params.lut = self->custom_lut;
-    params.lut_type = PL_LUT_NORMALIZED;
-    GST_TRACE_OBJECT(self, "Applying .cube LUT to frame");
+  gboolean ok = pl_render_image(self->pl_renderer, &img, &target, &params);
+  if (!ok) {
+    GST_ERROR_OBJECT(self, "pl_render_image() failed (LUT pass)");
+    pl_tex_destroy(self->pl_gl->gpu, &src);
+    pl_tex_destroy(self->pl_gl->gpu, &dst);
+    return FALSE;
   }
 
   /*
-   * TODO: Implement intensity blending.
-   *
-   * libplacebo does not natively support a LUT intensity/blend parameter.
-   * To support partial LUT application (intensity < 1.0), we would need to:
-   *   1. Render the LUT result to a temporary texture
-   *   2. Blend between the original and LUT-processed result using a
-   *      simple mix shader: out = mix(original, lut_result, intensity)
-   *
-   * For now, the LUT is applied at full strength (intensity=1.0 behavior).
-   * The intensity property is stored and accessible for future implementation.
+   * Blending pass: mix(original, lut_applied, intensity) via custom shader.
+   * Only executed when 0 < intensity < 1.  Uses pl_dispatch + pl_shader_custom
+   * to run a trivial GLSL mix shader that samples the original input and the
+   * LUT-processed temporary texture, then writes the blended result to the
+   * output texture.
    */
-  if (self->intensity < 1.0) {
-    GST_LOG_OBJECT(self, "Intensity %.2f set but blending not yet implemented; "
-        "applying LUT at full strength", self->intensity);
-  }
+  if (need_blend) {
+    pl_shader sh = pl_dispatch_begin(self->pl_dispatch);
 
-  gboolean ok = pl_render_image(self->pl_renderer, &img, &target, &params);
+    /* Build the mix shader using pl_shader_custom with texture descriptors */
+    struct pl_shader_desc descs[2] = {
+        {
+            .desc = {
+                .name = "orig_tex",
+                .type = PL_DESC_SAMPLED_TEX,
+            },
+            .binding = {
+                .object = src,
+                .sample_mode = PL_TEX_SAMPLE_LINEAR,
+            },
+        },
+        {
+            .desc = {
+                .name = "lut_tex",
+                .type = PL_DESC_SAMPLED_TEX,
+            },
+            .binding = {
+                .object = self->blend_tex,
+                .sample_mode = PL_TEX_SAMPLE_LINEAR,
+            },
+        },
+    };
 
-  if (!ok) {
-    GST_ERROR_OBJECT(self, "pl_render_image() failed");
+    float fintensity = (float) intensity;
+    struct pl_shader_var vars[1] = {
+        {
+            .var = {
+                .name = "intensity",
+                .type = PL_VAR_FLOAT,
+                .dim_v = 1,
+                .dim_m = 1,
+            },
+            .data = &fintensity,
+        },
+    };
+
+    char body[512];
+    g_snprintf(body, sizeof(body),
+        "vec2 uv = gl_FragCoord.xy / vec2(float(%d), float(%d));\n"
+        "vec4 orig = textureLod(orig_tex, uv, 0.0);\n"
+        "vec4 lut  = textureLod(lut_tex,  uv, 0.0);\n"
+        "color = mix(orig, lut, intensity);\n",
+        w, h);
+
+    struct pl_custom_shader custom = {
+        .description = "LUT intensity blend",
+        .body = body,
+        .input = PL_SHADER_SIG_NONE,
+        .output = PL_SHADER_SIG_COLOR,
+        .descriptors = descs,
+        .num_descriptors = 2,
+        .variables = vars,
+        .num_variables = 1,
+    };
+
+    if (!pl_shader_custom(sh, &custom)) {
+      GST_ERROR_OBJECT(self, "pl_shader_custom() failed for blend pass");
+      pl_dispatch_abort(self->pl_dispatch, &sh);
+      pl_tex_destroy(self->pl_gl->gpu, &src);
+      pl_tex_destroy(self->pl_gl->gpu, &dst);
+      return FALSE;
+    }
+
+    struct pl_dispatch_params dparams = {
+        .shader = &sh,
+        .target = dst,
+    };
+
+    ok = pl_dispatch_finish(self->pl_dispatch, &dparams);
+    if (!ok) {
+      GST_ERROR_OBJECT(self, "pl_dispatch_finish() failed for blend pass");
+      pl_tex_destroy(self->pl_gl->gpu, &src);
+      pl_tex_destroy(self->pl_gl->gpu, &dst);
+      return FALSE;
+    }
+
+    GST_TRACE_OBJECT(self, "Intensity blend pass completed (%.2f)", intensity);
   }
 
   pl_tex_destroy(self->pl_gl->gpu, &src);
   pl_tex_destroy(self->pl_gl->gpu, &dst);
-
-  return ok;
+  return TRUE;
 }
 
 /* ---------- Finalize ---------- */
@@ -348,6 +486,8 @@ static void gst_placebo_filter_init(GstPlaceboFilter *self) {
   self->pl_log = NULL;
   self->pl_gl = NULL;
   self->pl_renderer = NULL;
+  self->pl_dispatch = NULL;
   self->src_tex = NULL;
   self->dst_tex = NULL;
+  self->blend_tex = NULL;
 }
