@@ -93,9 +93,7 @@ class EditingSession:
 
     def call_tool(self, tool_name: str, params: dict) -> Any:
         """Execute a tool with state tracking and history recording."""
-        # Get tool info for provisions
-        tool_info = self._registry._tools.get(tool_name)
-        provisions = tool_info["provides"] if tool_info else []
+        provisions = self._registry.get_tool_provisions(tool_name)
 
         result = self._registry.call_tool(tool_name, params, self._state)
 
@@ -112,13 +110,21 @@ class EditingSession:
         return result
 
     def undo_last(self) -> ToolCall | None:
-        """Remove last tool call from history. Returns the removed call."""
+        """Remove last tool call from history. Returns the removed call.
+
+        Only removes provisions that are not also provided by earlier history entries.
+        """
         if not self._history:
             return None
         call = self._history.pop()
-        # Remove provisions added by this call
+        # Collect provisions still provided by remaining history
+        remaining_provisions: set[str] = set()
+        for h in self._history:
+            remaining_provisions.update(h.provisions)
+        # Only discard provisions not covered by remaining history
         for p in call.provisions:
-            self._state._state.discard(p)
+            if p not in remaining_provisions:
+                self._state.discard(p)
         return call
 
     def reset(self) -> None:

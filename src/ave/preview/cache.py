@@ -62,13 +62,24 @@ class SegmentCache:
         return self._get_segment(index).state
 
     def mark_rendering(self, index: int) -> None:
-        self._get_segment(index).state = SegmentState.RENDERING
+        seg = self._get_segment(index)
+        if seg.state != SegmentState.DIRTY:
+            raise CacheError(
+                f"Cannot mark segment {index} as RENDERING: "
+                f"current state is {seg.state.value}, expected DIRTY"
+            )
+        seg.state = SegmentState.RENDERING
 
     def mark_clean(self, index: int, file_path: Path) -> None:
         file_path = Path(file_path)
         if not file_path.exists():
             raise CacheError(f"File does not exist: {file_path}")
         seg = self._get_segment(index)
+        if seg.state != SegmentState.RENDERING:
+            raise CacheError(
+                f"Cannot mark segment {index} as CLEAN: "
+                f"current state is {seg.state.value}, expected RENDERING"
+            )
         seg.state = SegmentState.CLEAN
         seg.file_path = file_path
 

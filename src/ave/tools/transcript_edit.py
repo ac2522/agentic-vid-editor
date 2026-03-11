@@ -80,12 +80,13 @@ def find_filler_words(
 ) -> list[FillerMatch]:
     """Find filler words in transcript with their timestamps."""
     filler_set = fillers if fillers is not None else DEFAULT_FILLERS
+    filler_lower = {f.lower() for f in filler_set}
     matches: list[FillerMatch] = []
 
     for seg_idx, segment in enumerate(transcript.segments):
         for word_info in segment.words:
             word = word_info["word"]
-            if word.lower() in {f.lower() for f in filler_set}:
+            if word.lower() in filler_lower:
                 matches.append(
                     FillerMatch(
                         word=word.lower(),

@@ -96,10 +96,11 @@ class TestPreviewPipeline:
         cache = SegmentCache(tmp_path / "cache", timeline_id="edit_test")
         cache.register_segments(_boundaries_as_tuples(boundaries))
 
-        # Create dummy files and mark all CLEAN
+        # Transition all segments through DIRTY -> RENDERING -> CLEAN
         for b in boundaries:
             fp = tmp_path / "cache" / f"seg_{b.index}.mp4"
             fp.write_bytes(b"fake segment data")
+            cache.mark_rendering(b.index)
             cache.mark_clean(b.index, fp)
 
         # Verify all clean
@@ -173,6 +174,7 @@ class TestPreviewPipeline:
         seg_file = tmp_path / "cache" / "seg_0.mp4"
         seg_file.write_bytes(b"segment video content")
 
+        cache.mark_rendering(0)
         cache.mark_clean(0, seg_file)
         assert cache.get_state(0) == SegmentState.CLEAN
         assert cache.get_segment_path(0) == seg_file
@@ -194,10 +196,11 @@ class TestPreviewPipeline:
         )
         cache.register_segments(boundaries)
 
-        # Mark segments 0 and 2 as CLEAN
+        # Mark segments 0 and 2 as CLEAN (DIRTY -> RENDERING -> CLEAN)
         for idx in (0, 2):
             fp = cache_dir / f"seg_{idx}.mp4"
             fp.write_bytes(b"data")
+            cache.mark_rendering(idx)
             cache.mark_clean(idx, fp)
 
         # Save
@@ -298,10 +301,11 @@ class TestServerIntegration:
 
         cache = self._make_cache_with_segments(cache_dir)
 
-        # Mark 2 segments clean
+        # Mark 2 segments clean (DIRTY -> RENDERING -> CLEAN)
         for idx in (0, 1):
             fp = cache_dir / f"seg_{idx}.mp4"
             fp.write_bytes(b"data")
+            cache.mark_rendering(idx)
             cache.mark_clean(idx, fp)
 
         server = PreviewServer(cache, segments_dir)

@@ -256,6 +256,13 @@ class ToolRegistry:
             counts[d] = counts.get(d, 0) + 1
         return [{"domain": d, "count": c} for d, c in sorted(counts.items())]
 
+    def get_tool_provisions(self, tool_name: str) -> list[str]:
+        """Get the provisions list for a tool. Raises RegistryError if not found."""
+        info = self._tools.get(tool_name)
+        if info is None:
+            raise RegistryError(f"Tool not found: {tool_name}")
+        return list(info["provides"])
+
     @property
     def tool_count(self) -> int:
         return len(self._tools)

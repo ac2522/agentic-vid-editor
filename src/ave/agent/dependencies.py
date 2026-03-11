@@ -74,6 +74,10 @@ class SessionState:
     def add(self, *provisions: str) -> None:
         self._state.update(provisions)
 
+    def discard(self, *provisions: str) -> None:
+        for p in provisions:
+            self._state.discard(p)
+
     def has(self, requirement: str) -> bool:
         return requirement in self._state
 

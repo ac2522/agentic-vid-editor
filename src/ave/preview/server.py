@@ -33,6 +33,7 @@ class PreviewServer:
     ) -> None:
         self._cache = cache
         self._segments_dir = Path(segments_dir)
+        self._segments_dir.mkdir(parents=True, exist_ok=True)
         self._video_path = video_path
         self._websockets: weakref.WeakSet[web.WebSocketResponse] = weakref.WeakSet()
         self._app: web.Application | None = None
@@ -46,8 +47,7 @@ class PreviewServer:
             web.get("/api/status", self._handle_status),
         ])
         # Serve segment files as static
-        if self._segments_dir.exists():
-            app.add_routes([web.static("/segments", self._segments_dir)])
+        app.add_routes([web.static("/segments", self._segments_dir)])
         # Store reference so tests can access the server instance
         app["preview_server"] = self
         self._app = app
@@ -115,7 +115,7 @@ class PreviewServer:
             await ws.send_json({"type": "error", "message": "No video source configured"})
             return
 
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         try:
             frame_bytes = await loop.run_in_executor(
                 None, lambda: extract_frame(self._video_path, timestamp_ns, format="jpeg")
