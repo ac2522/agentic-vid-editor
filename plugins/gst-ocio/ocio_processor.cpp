@@ -38,6 +38,9 @@ struct OcioProcessor {
     int lut3d_edge_len;
     std::vector<float> lut3d_data;
 
+    /* Cached 3D texture sampler names from GpuShaderDesc */
+    std::vector<std::string> lut3d_sampler_names;
+
     /* Error reporting */
     std::string error_msg;
 };
@@ -82,6 +85,24 @@ OcioProcessor* ocio_processor_new(const char* config_path,
             return nullptr;
         }
 
+        /* Validate that source and destination color spaces exist */
+        if (!proc->config->hasColorSpace(src_cs)) {
+            std::string msg = "Color space '";
+            msg += src_cs;
+            msg += "' not found in OCIO config";
+            set_error(error_out, msg);
+            delete proc;
+            return nullptr;
+        }
+        if (!proc->config->hasColorSpace(dst_cs)) {
+            std::string msg = "Color space '";
+            msg += dst_cs;
+            msg += "' not found in OCIO config";
+            set_error(error_out, msg);
+            delete proc;
+            return nullptr;
+        }
+
         /* Create processor for color space transform */
         proc->processor = proc->config->getProcessor(src_cs, dst_cs);
         if (!proc->processor) {
@@ -117,9 +138,28 @@ OcioProcessor* ocio_processor_new(const char* config_path,
         }
         proc->function_name = "OCIOColor";
 
+        /* Validate shader text is non-empty */
+        if (proc->shader_text.empty()) {
+            set_error(error_out,
+                "OCIO produced empty shader text for transform");
+            delete proc;
+            return nullptr;
+        }
+
         /* Extract 3D LUT data if present */
         unsigned num_3d_textures = proc->shader_desc->getNum3DTextures();
         if (num_3d_textures > 0) {
+            /* Cache sampler names for all 3D textures */
+            for (unsigned i = 0; i < num_3d_textures; ++i) {
+                const char* t_name = nullptr;
+                const char* s_name = nullptr;
+                unsigned el = 0;
+                OCIO::Interpolation ip = OCIO::INTERP_LINEAR;
+                proc->shader_desc->get3DTexture(i, t_name, s_name, el, ip);
+                proc->lut3d_sampler_names.push_back(
+                    s_name ? std::string(s_name) : std::string());
+            }
+
             const char* tex_name = nullptr;
             const char* sampler_name = nullptr;
             unsigned edgelen = 0;
@@ -130,6 +170,14 @@ OcioProcessor* ocio_processor_new(const char* config_path,
 
             proc->lut3d_edge_len = static_cast<int>(edgelen);
 
+            /* Validate LUT size */
+            if (edgelen == 0) {
+                set_error(error_out,
+                    "OCIO reported 3D LUT with zero edge length");
+                delete proc;
+                return nullptr;
+            }
+
             /* Get LUT data: edgelen^3 texels, 3 floats (RGB) each */
             const float* values = nullptr;
             proc->shader_desc->get3DTextureValues(0, values);
@@ -139,6 +187,13 @@ OcioProcessor* ocio_processor_new(const char* config_path,
                                     static_cast<size_t>(edgelen) *
                                     static_cast<size_t>(edgelen) * 3;
                 proc->lut3d_data.assign(values, values + num_floats);
+            }
+
+            if (proc->lut3d_data.empty()) {
+                set_error(error_out,
+                    "OCIO 3D LUT has valid size but no data");
+                delete proc;
+                return nullptr;
             }
         } else {
             proc->lut3d_edge_len = 0;
@@ -195,6 +250,41 @@ const char* ocio_processor_get_error(OcioProcessor* proc)
 {
     if (!proc || proc->error_msg.empty()) return nullptr;
     return proc->error_msg.c_str();
+}
+
+const char* ocio_processor_get_texture_name(OcioProcessor* proc, int index)
+{
+    if (!proc) return nullptr;
+    if (index < 0 ||
+        static_cast<size_t>(index) >= proc->lut3d_sampler_names.size()) {
+        return nullptr;
+    }
+    const std::string& name = proc->lut3d_sampler_names[static_cast<size_t>(index)];
+    if (name.empty()) return nullptr;
+    return name.c_str();
+}
+
+int ocio_processor_validate_colorspace(const char* config_path,
+                                       const char* colorspace_name)
+{
+    if (!colorspace_name) return -1;
+
+    try {
+        OCIO::ConstConfigRcPtr config;
+        if (config_path && config_path[0] != '\0') {
+            config = OCIO::Config::CreateFromFile(config_path);
+        } else {
+            config = OCIO::Config::CreateFromEnv();
+        }
+
+        if (!config) return -1;
+
+        return config->hasColorSpace(colorspace_name) ? 1 : 0;
+    } catch (const OCIO::Exception&) {
+        return -1;
+    } catch (const std::exception&) {
+        return -1;
+    }
 }
 
 } /* extern "C" */

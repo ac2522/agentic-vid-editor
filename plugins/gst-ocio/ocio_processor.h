@@ -71,6 +71,27 @@ const char* ocio_processor_get_function_name(OcioProcessor* proc);
  */
 const char* ocio_processor_get_error(OcioProcessor* proc);
 
+/*
+ * Get the sampler name for the 3D LUT texture at the given index.
+ * Returns the sampler name string from OCIO's GpuShaderDesc, or NULL if
+ * no 3D texture exists at that index.
+ * The returned string is owned by the processor and valid until it is freed.
+ *
+ * @param index  3D texture index (typically 0).
+ * @return       Sampler name string, or NULL if unavailable.
+ */
+const char* ocio_processor_get_texture_name(OcioProcessor* proc, int index);
+
+/*
+ * Validate that a color space name exists in an OCIO config.
+ *
+ * @param config_path      Path to OCIO config file, or NULL to use $OCIO env var.
+ * @param colorspace_name  Color space name to look up.
+ * @return                 1 if valid, 0 if not found, -1 on error (e.g. bad config).
+ */
+int ocio_processor_validate_colorspace(const char* config_path,
+                                       const char* colorspace_name);
+
 #ifdef __cplusplus
 }
 #endif

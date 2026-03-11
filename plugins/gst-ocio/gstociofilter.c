@@ -262,6 +262,17 @@ static gboolean gst_ocio_filter_gl_start(GstGLFilter *filter) {
     return FALSE;
   }
 
+  /* Extract 3D LUT sampler name from OCIO API */
+  {
+    const char *sampler = ocio_processor_get_texture_name(
+        (OcioProcessor *)self->ocio_processor, 0);
+    g_free(self->lut3d_sampler_name);
+    self->lut3d_sampler_name = sampler ? g_strdup(sampler) : NULL;
+    if (sampler) {
+      GST_DEBUG_OBJECT(self, "OCIO 3D LUT sampler name: %s", sampler);
+    }
+  }
+
   /* Upload 3D LUT as GL texture */
   if (!upload_lut3d_texture(self, gl)) {
     GST_ERROR_OBJECT(self, "Failed to upload 3D LUT texture");
@@ -299,6 +310,9 @@ static void gst_ocio_filter_gl_stop(GstGLFilter *filter) {
     self->lut3d_tex = 0;
   }
   self->lut3d_size = 0;
+
+  g_free(self->lut3d_sampler_name);
+  self->lut3d_sampler_name = NULL;
 
   if (self->ocio_processor) {
     ocio_processor_free((OcioProcessor *)self->ocio_processor);
@@ -359,17 +373,37 @@ static gboolean gst_ocio_filter_filter_texture(GstGLFilter *filter,
 
     /*
      * The OCIO shader expects the 3D LUT sampler with a specific name.
-     * The default OCIO resource prefix is "ocio_" and the sampler name
-     * comes from get3DTexture(). We bind it at texture unit 1.
+     * Use the sampler name extracted from OCIO's GpuShaderDesc API.
+     * Fall back to searching common hardcoded names only if the API
+     * did not provide a name.
      */
-    GLint lut_loc = gl->GetUniformLocation(self->gl_program,
-        "ocio_lut3d_0Sampler");
+    GLint lut_loc = -1;
+
+    if (self->lut3d_sampler_name) {
+      lut_loc = gl->GetUniformLocation(self->gl_program,
+          self->lut3d_sampler_name);
+      if (lut_loc < 0) {
+        GST_WARNING_OBJECT(self,
+            "OCIO sampler name '%s' not found in shader, trying fallbacks",
+            self->lut3d_sampler_name);
+      }
+    }
+
     if (lut_loc < 0) {
-      /* Try alternative naming conventions */
+      /* Fallback: try common OCIO naming conventions */
+      lut_loc = gl->GetUniformLocation(self->gl_program,
+          "ocio_lut3d_0Sampler");
+    }
+    if (lut_loc < 0) {
       lut_loc = gl->GetUniformLocation(self->gl_program, "ocio_lut3d");
     }
-    if (lut_loc >= 0)
+
+    if (lut_loc >= 0) {
       gl->Uniform1i(lut_loc, 1);
+    } else {
+      GST_WARNING_OBJECT(self,
+          "Could not find 3D LUT sampler uniform in OCIO shader");
+    }
 
     gl->ActiveTexture(GL_TEXTURE0);
   }
@@ -428,6 +462,7 @@ static void gst_ocio_filter_finalize(GObject *object) {
   g_free(self->config_path);
   g_free(self->src_colorspace);
   g_free(self->dst_colorspace);
+  g_free(self->lut3d_sampler_name);
   /* ocio_processor should already be freed in gl_stop */
   if (self->ocio_processor) {
     ocio_processor_free((OcioProcessor *)self->ocio_processor);
@@ -486,4 +521,5 @@ static void gst_ocio_filter_init(GstOCIOFilter *self) {
   self->gl_program = 0;
   self->lut3d_tex = 0;
   self->lut3d_size = 0;
+  self->lut3d_sampler_name = NULL;
 }
