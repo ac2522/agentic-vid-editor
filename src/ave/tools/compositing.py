@@ -4,6 +4,7 @@ Pure logic layer: no GES dependency. Computes parameters that the GES
 execution layer applies to the timeline.
 """
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
 
@@ -57,6 +58,17 @@ class BlendFuncParams:
     dst_alpha: int
     equation_rgb: int
     equation_alpha: int
+    requires_shader: bool = False
+
+
+@dataclass(frozen=True)
+class BlendShaderInfo:
+    """Complete blend information including shader source if needed."""
+
+    blend_mode: BlendMode
+    requires_shader: bool
+    glsl_source: str | None  # None if GL blend functions suffice
+    blend_params: BlendFuncParams | None  # None if shader required
 
 
 def compute_layer_params(layers: list[dict]) -> list[LayerParams]:
@@ -151,9 +163,9 @@ def compute_blend_params(blend_mode: BlendMode) -> BlendFuncParams:
             equation_rgb=GL_FUNC_ADD,
             equation_alpha=GL_FUNC_ADD,
         ),
-        # Approximation: true overlay requires per-pixel conditional
-        # (multiply when dst < 0.5, screen otherwise). Falls back to
-        # standard alpha compositing until shader-based impl is added.
+        # Overlay and soft light require per-pixel shader math.
+        # GL blend params are fallback alpha compositing; requires_shader
+        # signals the execution layer to use the GLSL shader instead.
         BlendMode.OVERLAY: BlendFuncParams(
             src_rgb=GL_SRC_ALPHA,
             dst_rgb=GL_ONE_MINUS_SRC_ALPHA,
@@ -161,9 +173,8 @@ def compute_blend_params(blend_mode: BlendMode) -> BlendFuncParams:
             dst_alpha=GL_ONE_MINUS_SRC_ALPHA,
             equation_rgb=GL_FUNC_ADD,
             equation_alpha=GL_FUNC_ADD,
+            requires_shader=True,
         ),
-        # Approximation: true soft light requires shader math.
-        # Falls back to standard alpha compositing.
         BlendMode.SOFT_LIGHT: BlendFuncParams(
             src_rgb=GL_SRC_ALPHA,
             dst_rgb=GL_ONE_MINUS_SRC_ALPHA,
@@ -171,6 +182,7 @@ def compute_blend_params(blend_mode: BlendMode) -> BlendFuncParams:
             dst_alpha=GL_ONE_MINUS_SRC_ALPHA,
             equation_rgb=GL_FUNC_ADD,
             equation_alpha=GL_FUNC_ADD,
+            requires_shader=True,
         ),
         BlendMode.ADD: BlendFuncParams(
             src_rgb=GL_ONE,
@@ -183,3 +195,122 @@ def compute_blend_params(blend_mode: BlendMode) -> BlendFuncParams:
     }
 
     return _BLEND_MAP[blend_mode]
+
+
+# ---------------------------------------------------------------------------
+# GLSL blend mode shaders
+# ---------------------------------------------------------------------------
+
+
+def generate_overlay_glsl() -> str:
+    """Generate a GLSL fragment shader for overlay blending.
+
+    Overlay formula per channel:
+      if dst < 0.5: result = 2.0 * src * dst
+      else:         result = 1.0 - 2.0 * (1.0 - src) * (1.0 - dst)
+
+    Returns:
+        GLSL source string (#version 120) for a two-input blend shader.
+    """
+    return """\
+#version 120
+uniform sampler2D tex;
+uniform sampler2D tex_dst;
+varying vec2 v_texcoord;
+
+void main() {
+    vec4 src = texture2D(tex, v_texcoord);
+    vec4 dst = texture2D(tex_dst, v_texcoord);
+
+    vec3 result;
+
+    // Overlay: multiply when dst < 0.5, screen otherwise
+    result.r = (dst.r < 0.5) ? 2.0 * src.r * dst.r : 1.0 - 2.0 * (1.0 - src.r) * (1.0 - dst.r);
+    result.g = (dst.g < 0.5) ? 2.0 * src.g * dst.g : 1.0 - 2.0 * (1.0 - src.g) * (1.0 - dst.g);
+    result.b = (dst.b < 0.5) ? 2.0 * src.b * dst.b : 1.0 - 2.0 * (1.0 - src.b) * (1.0 - dst.b);
+
+    // Alpha compositing: src over dst
+    float out_a = src.a + dst.a * (1.0 - src.a);
+    vec3 out_rgb = mix(dst.rgb, result, src.a);
+
+    gl_FragColor = vec4(out_rgb, out_a);
+}
+"""
+
+
+def generate_soft_light_glsl() -> str:
+    """Generate a GLSL fragment shader for soft light blending (Photoshop formula).
+
+    Soft light formula per channel:
+      if src < 0.5: result = dst - (1.0 - 2.0*src) * dst * (1.0 - dst)
+      else:         result = dst + (2.0*src - 1.0) * (sqrt(dst) - dst)
+
+    Returns:
+        GLSL source string (#version 120) for a two-input blend shader.
+    """
+    return """\
+#version 120
+uniform sampler2D tex;
+uniform sampler2D tex_dst;
+varying vec2 v_texcoord;
+
+void main() {
+    vec4 src = texture2D(tex, v_texcoord);
+    vec4 dst = texture2D(tex_dst, v_texcoord);
+
+    vec3 result;
+
+    // Soft light (Photoshop formula)
+    result.r = (src.r < 0.5) ? dst.r - (1.0 - 2.0 * src.r) * dst.r * (1.0 - dst.r)
+                              : dst.r + (2.0 * src.r - 1.0) * (sqrt(dst.r) - dst.r);
+    result.g = (src.g < 0.5) ? dst.g - (1.0 - 2.0 * src.g) * dst.g * (1.0 - dst.g)
+                              : dst.g + (2.0 * src.g - 1.0) * (sqrt(dst.g) - dst.g);
+    result.b = (src.b < 0.5) ? dst.b - (1.0 - 2.0 * src.b) * dst.b * (1.0 - dst.b)
+                              : dst.b + (2.0 * src.b - 1.0) * (sqrt(dst.b) - dst.b);
+
+    // Alpha compositing: src over dst
+    float out_a = src.a + dst.a * (1.0 - src.a);
+    vec3 out_rgb = mix(dst.rgb, result, src.a);
+
+    gl_FragColor = vec4(out_rgb, out_a);
+}
+"""
+
+
+_SHADER_GENERATORS: dict[BlendMode, Callable[[], str]] = {
+    BlendMode.OVERLAY: generate_overlay_glsl,
+    BlendMode.SOFT_LIGHT: generate_soft_light_glsl,
+}
+
+
+def compute_blend_info(blend_mode: BlendMode) -> BlendShaderInfo:
+    """Get complete blend information including shader if needed.
+
+    For blend modes that require a shader (OVERLAY, SOFT_LIGHT), returns
+    a BlendShaderInfo with glsl_source populated and blend_params set to None.
+    For modes that can use GL blend functions, returns blend_params with
+    no shader.
+
+    Args:
+        blend_mode: The blend mode to get info for.
+
+    Returns:
+        BlendShaderInfo with either glsl_source or blend_params.
+    """
+    params = compute_blend_params(blend_mode)
+
+    if params.requires_shader:
+        generator = _SHADER_GENERATORS[blend_mode]
+        return BlendShaderInfo(
+            blend_mode=blend_mode,
+            requires_shader=True,
+            glsl_source=generator(),
+            blend_params=None,
+        )
+
+    return BlendShaderInfo(
+        blend_mode=blend_mode,
+        requires_shader=False,
+        glsl_source=None,
+        blend_params=params,
+    )
