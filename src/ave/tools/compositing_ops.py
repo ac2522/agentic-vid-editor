@@ -13,48 +13,15 @@ from typing import TYPE_CHECKING
 
 from ave.tools.compositing import (
     BlendMode,
+    BlendShaderInfo,
     CompositingError,
+    compute_blend_info,
     compute_blend_params,
     compute_layer_params,
 )
 
 if TYPE_CHECKING:
     from ave.project.timeline import Timeline
-
-# Blend modes that require a GLSL shader for correct per-pixel math.
-# TODO: Once S5-7 lands BlendFuncParams.requires_shader, use that instead.
-_SHADER_BLEND_MODES = {BlendMode.OVERLAY, BlendMode.SOFT_LIGHT}
-
-# Placeholder GLSL blend shaders for modes that need per-pixel math.
-# TODO: Replace with compute_blend_info() from S5-7 when available.
-_BLEND_SHADERS: dict[BlendMode, str] = {
-    BlendMode.OVERLAY: """\
-varying vec2 v_texcoord;
-uniform sampler2D tex;
-void main () {
-  vec4 src = texture2D(tex, v_texcoord);
-  // Overlay: multiply when dst < 0.5, screen otherwise
-  // Simplified single-pass approximation
-  vec3 result = mix(
-    2.0 * src.rgb * src.rgb,
-    1.0 - 2.0 * (1.0 - src.rgb) * (1.0 - src.rgb),
-    step(0.5, src.rgb)
-  );
-  gl_FragColor = vec4(result, src.a);
-}
-""",
-    BlendMode.SOFT_LIGHT: """\
-varying vec2 v_texcoord;
-uniform sampler2D tex;
-void main () {
-  vec4 src = texture2D(tex, v_texcoord);
-  // Soft light: Pegtop formula
-  vec3 result = (1.0 - 2.0 * src.rgb) * src.rgb * src.rgb
-              + 2.0 * src.rgb * src.rgb;
-  gl_FragColor = vec4(result, src.a);
-}
-""",
-}
 
 
 def apply_layer_compositing(
@@ -130,14 +97,13 @@ def apply_blend_mode(
         Effect ID (for shader modes) or description string (for GL blend
         function modes).
     """
-    blend_params = compute_blend_params(blend_mode)
+    blend_info = compute_blend_info(blend_mode)
     clip = timeline.get_clip(clip_id)
 
-    if blend_mode in _SHADER_BLEND_MODES:
+    if blend_info.requires_shader:
         # Shader-based blend: add glshader effect
-        glsl_source = _BLEND_SHADERS[blend_mode]
         effect_id = timeline.add_effect(clip_id, "glshader")
-        timeline.set_effect_property(clip_id, effect_id, "fragment", glsl_source)
+        timeline.set_effect_property(clip_id, effect_id, "fragment", blend_info.glsl_source)
         return effect_id
 
     # GL blend function mode: set properties on compositor pad
