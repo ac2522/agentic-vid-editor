@@ -62,6 +62,9 @@ class TestCasualQueries:
             ("add words on the video", "add_text_overlay"),
             ("stitch together clips", "concatenate"),
             ("turn down the volume", "volume"),
+            ("grab that video off youtube", "download_media"),
+            ("rip audio from a video", "download_media"),
+            ("get the song in mp3", "download_media"),
         ],
     )
     def test_casual_finds_tool(self, session, query, expected_tool):
@@ -122,6 +125,9 @@ class TestTaskOrientedQueries:
             ("find the filler words", "find_fillers"),
             ("make a rough cut automatically", "create_rough_cut"),
             ("export for Premiere", "export_otio"),
+            ("download a song from youtube", "download_media"),
+            ("search for a music video", "search_youtube"),
+            ("what quality options are available", "list_available_formats"),
         ],
     )
     def test_task_oriented_finds_tool(self, session, query, expected_tool):
@@ -197,6 +203,10 @@ class TestDomainBrowsing:
                     "render_with_preset",
                     "list_render_presets",
                 },
+            ),
+            (
+                "download",
+                {"search_youtube", "list_available_formats", "download_media"},
             ),
         ],
     )
