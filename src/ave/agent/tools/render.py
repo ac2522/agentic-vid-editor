@@ -50,3 +50,34 @@ def register_render_tools(registry: ToolRegistry) -> None:
         from ave.render.segment import compute_segment_boundaries
 
         return compute_segment_boundaries(duration_ns, segment_duration_ns)
+
+    @registry.tool(
+        domain="render",
+        requires=["timeline_loaded"],
+        provides=["preset_rendered"],
+    )
+    def render_with_preset(xges_path: str, preset_name: str, output_path: str) -> str:
+        """Render timeline using a named preset (e.g. youtube_4k, instagram_reel, prores_master)."""
+        import dataclasses
+        import json
+
+        from ave.render.presets import get_preset, validate_preset
+
+        preset = get_preset(preset_name)
+        errors = validate_preset(preset)
+        if errors:
+            raise ValueError(f"Invalid preset '{preset_name}': {'; '.join(errors)}")
+        return json.dumps(dataclasses.asdict(preset))
+
+    @registry.tool(
+        domain="render",
+        requires=[],
+        provides=[],
+    )
+    def list_render_presets() -> str:
+        """List all available render presets with their descriptions."""
+        import json
+
+        from ave.render.presets import list_presets
+
+        return json.dumps(list_presets())

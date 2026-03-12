@@ -68,10 +68,10 @@ def test_transcription_tools_registered(full_registry):
 # ---- 5. Render domain ----
 
 def test_render_tools_registered(full_registry):
-    """Render domain has: render_proxy, render_segment, compute_segments (3 tools)."""
+    """Render domain has: render_proxy, render_segment, compute_segments, render_with_preset, list_render_presets (5 tools)."""
     results = full_registry.search_tools(domain="render")
     names = {t.name for t in results}
-    assert names == {"render_proxy", "render_segment", "compute_segments"}
+    assert names == {"render_proxy", "render_segment", "compute_segments", "render_with_preset", "list_render_presets"}
 
 
 # ---- 6. Project domain ----
@@ -143,7 +143,9 @@ def test_all_tools_have_schemas(full_registry):
         assert schema.domain == tool_summary.domain
         assert schema.description
         assert isinstance(schema.params, list)
-        assert len(schema.params) > 0, f"Tool '{schema.name}' has no params"
+        # Some tools (e.g. list_render_presets) are parameterless
+        if schema.name not in {"list_render_presets"}:
+            assert len(schema.params) > 0, f"Tool '{schema.name}' has no params"
 
 
 # ---- 13. Editing trim callable ----

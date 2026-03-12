@@ -231,3 +231,71 @@ def test_session_includes_new_tools():
     assert len(session.search_tools(domain="motion_graphics")) == 3
     assert len(session.search_tools(domain="scene")) == 3
     assert len(session.search_tools(domain="interchange")) == 2
+
+
+# ---- Render preset tools ----
+
+
+def test_render_preset_tools_registered(full_registry):
+    """render_with_preset and list_render_presets are registered in render domain."""
+    results = full_registry.search_tools(domain="render")
+    names = {t.name for t in results}
+    assert "render_with_preset" in names
+    assert "list_render_presets" in names
+
+
+def test_search_youtube_finds_render_with_preset(full_registry):
+    """search_tools('preset') finds render_with_preset."""
+    results = full_registry.search_tools("preset")
+    names = [t.name for t in results]
+    assert "render_with_preset" in names
+
+
+def test_list_render_presets_returns_data(full_registry):
+    """list_render_presets returns a string containing preset info."""
+    result = full_registry.call_tool("list_render_presets", {})
+    assert "h264_web" in result
+    assert "youtube_4k" in result
+    assert "instagram_reel" in result
+
+
+def test_render_with_preset_valid(full_registry):
+    """render_with_preset returns preset config for a valid preset."""
+    from ave.agent.dependencies import SessionState
+
+    state = SessionState()
+    state.add("timeline_loaded")
+    result = full_registry.call_tool(
+        "render_with_preset",
+        {"xges_path": "/tmp/test.xges", "preset_name": "youtube_4k", "output_path": "/tmp/out.mp4"},
+        session_state=state,
+    )
+    assert "youtube_4k" in result
+    assert "x265enc" in result
+
+
+def test_render_with_preset_invalid_name(full_registry):
+    """render_with_preset raises for unknown preset."""
+    from ave.agent.dependencies import SessionState
+    from ave.render.presets import PresetError
+
+    state = SessionState()
+    state.add("timeline_loaded")
+    with pytest.raises(PresetError):
+        full_registry.call_tool(
+            "render_with_preset",
+            {"xges_path": "/tmp/test.xges", "preset_name": "nonexistent", "output_path": "/tmp/out.mp4"},
+            session_state=state,
+        )
+
+
+def test_render_with_preset_requires_timeline(full_registry):
+    """render_with_preset requires timeline_loaded."""
+    schema = full_registry.get_tool_schema("render_with_preset")
+    assert "timeline_loaded" in schema.requires
+
+
+def test_list_render_presets_no_prerequisites(full_registry):
+    """list_render_presets has no prerequisites."""
+    schema = full_registry.get_tool_schema("list_render_presets")
+    assert schema.requires == []
