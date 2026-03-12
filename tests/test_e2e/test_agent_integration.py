@@ -395,3 +395,462 @@ class TestCrossPhase:
         assert "clip_trimmed" in data["state"]
         assert "volume_set" in data["state"]
         assert "test.xges" in data["project_path"]
+
+
+# ---------------------------------------------------------------------------
+# TestMultiToolWorkflow
+# ---------------------------------------------------------------------------
+
+
+class TestMultiToolWorkflow:
+    """Sequential tool chains with state tracking."""
+
+    def test_ingest_then_trim_workflow(self, tmp_path):
+        """probe_media -> ingest_media -> trim: state accumulates correctly.
+
+        Since probe_media and ingest_media call real backends that may not
+        be available in test, we simulate their state provisions and test
+        the chain enforcement + trim execution.
+        """
+        session = EditingSession()
+
+        # probe_media has no prerequisites — verify schema
+        schema = session.get_tool_schema("probe_media")
+        assert schema.requires == []
+        assert "media_probed" in schema.provides
+
+        # ingest_media requires media_probed
+        schema = session.get_tool_schema("ingest_media")
+        assert "media_probed" in schema.requires
+        assert "media_ingested" in schema.provides
+
+        # Cannot ingest without probing first
+        with pytest.raises(PrerequisiteError, match="media_probed"):
+            session.call_tool("ingest_media", {
+                "source": "/tmp/test.mp4",
+                "project_dir": "/tmp/proj",
+                "asset_id": "a1",
+                "registry_path": "/tmp/reg.json",
+            })
+
+        # Simulate probe + ingest provisions, load project, then trim
+        session.state.add("media_probed", "media_ingested")
+        session.load_project(_make_xges(tmp_path))
+        session.state.add("clip_exists")
+
+        result = session.call_tool("trim", {
+            "clip_duration_ns": 10_000_000_000,
+            "in_ns": 0,
+            "out_ns": 5_000_000_000,
+        })
+        assert result is not None
+        assert session.state.has("media_probed")
+        assert session.state.has("media_ingested")
+        assert session.state.has("clip_trimmed")
+
+    def test_scene_pipeline_workflow(self, tmp_path):
+        """detect_scenes -> classify_shots: prerequisite chain enforced."""
+        session = EditingSession()
+        session.load_project(_make_xges(tmp_path))
+
+        # classify_shots requires scenes_detected — should fail
+        with pytest.raises(PrerequisiteError, match="scenes_detected"):
+            session.call_tool("classify_shots", {
+                "video_path": "/tmp/test.mp4",
+                "scenes_json": "[]",
+                "output_dir": "/tmp/out",
+            })
+
+        # Simulate detect_scenes provision (the real backend needs ffmpeg)
+        session.state.add("scenes_detected")
+
+        # Now classify should work
+        result = session.call_tool("classify_shots", {
+            "video_path": "/tmp/test.mp4",
+            "scenes_json": "[]",
+            "output_dir": "/tmp/out",
+        })
+        assert result is not None
+        assert session.state.has("shots_classified")
+
+    def test_editing_audio_color_chain(self, tmp_path):
+        """trim -> volume -> color_grade: multi-domain chain accumulates state."""
+        session = _session_with_project(tmp_path)
+
+        session.call_tool("trim", {
+            "clip_duration_ns": 10_000_000_000,
+            "in_ns": 1_000_000_000,
+            "out_ns": 9_000_000_000,
+        })
+        assert session.state.has("clip_trimmed")
+
+        session.call_tool("volume", {"level_db": -3.0})
+        assert session.state.has("volume_set")
+
+        session.call_tool("color_grade", {
+            "lift_r": 0.0, "lift_g": 0.0, "lift_b": 0.0,
+            "gamma_r": 1.0, "gamma_g": 1.0, "gamma_b": 1.0,
+            "gain_r": 1.0, "gain_g": 1.0, "gain_b": 1.0,
+        })
+        assert session.state.has("color_graded")
+
+        # All three provisions accumulated
+        assert session.state.has("clip_trimmed")
+        assert session.state.has("volume_set")
+        assert session.state.has("color_graded")
+
+        history = session.history
+        assert len(history) == 3
+        assert [h.tool_name for h in history] == ["trim", "volume", "color_grade"]
+
+
+# ---------------------------------------------------------------------------
+# TestUndoStateRollback
+# ---------------------------------------------------------------------------
+
+
+class TestUndoStateRollback:
+    """Undo with provision-aware rollback."""
+
+    def test_undo_removes_unique_provisions(self, tmp_path):
+        """Undo removes provisions not covered by remaining history."""
+        session = _session_with_project(tmp_path)
+
+        session.call_tool("trim", {
+            "clip_duration_ns": 10_000_000_000,
+            "in_ns": 1_000_000_000,
+            "out_ns": 5_000_000_000,
+        })
+        assert session.state.has("clip_trimmed")
+
+        session.call_tool("volume", {"level_db": -6.0})
+        assert session.state.has("volume_set")
+
+        # Undo volume — volume_set should be removed, clip_trimmed preserved
+        undone = session.undo_last()
+        assert undone.tool_name == "volume"
+        assert not session.state.has("volume_set")
+        assert session.state.has("clip_trimmed")
+
+    def test_undo_preserves_shared_provisions(self, tmp_path):
+        """Undo preserves provisions that other history entries also provide.
+
+        Both trim and split provide their own provisions, but both require
+        timeline_loaded which comes from load_project. We test with two
+        tools that share a provision by calling compute_segments twice
+        (both provide segments_computed).
+        """
+        session = _session_with_project(tmp_path)
+
+        # Call compute_segments twice — both provide "segments_computed"
+        session.call_tool("compute_segments", {
+            "duration_ns": 10_000_000_000,
+            "segment_duration_ns": 5_000_000_000,
+        })
+        assert session.state.has("segments_computed")
+
+        session.call_tool("compute_segments", {
+            "duration_ns": 20_000_000_000,
+            "segment_duration_ns": 5_000_000_000,
+        })
+        assert session.state.has("segments_computed")
+        assert len(session.history) == 2
+
+        # Undo second call — segments_computed should still be set
+        # because the first call also provides it
+        undone = session.undo_last()
+        assert undone is not None
+        assert session.state.has("segments_computed")
+
+        # Undo first call — now segments_computed should be removed
+        undone = session.undo_last()
+        assert undone is not None
+        assert not session.state.has("segments_computed")
+
+    def test_multiple_undos_restore_initial_state(self, tmp_path):
+        """Undoing all calls restores empty state (except timeline_loaded from load_project)."""
+        session = _session_with_project(tmp_path)
+
+        session.call_tool("trim", {
+            "clip_duration_ns": 10_000_000_000,
+            "in_ns": 1_000_000_000,
+            "out_ns": 5_000_000_000,
+        })
+        session.call_tool("volume", {"level_db": -3.0})
+        session.call_tool("fade", {
+            "clip_duration_ns": 10_000_000_000,
+            "fade_in_ns": 500_000_000,
+            "fade_out_ns": 500_000_000,
+        })
+
+        assert len(session.history) == 3
+        assert session.state.has("clip_trimmed")
+        assert session.state.has("volume_set")
+        assert session.state.has("fade_applied")
+
+        # Undo all three
+        session.undo_last()
+        session.undo_last()
+        session.undo_last()
+
+        assert len(session.history) == 0
+        assert not session.state.has("clip_trimmed")
+        assert not session.state.has("volume_set")
+        assert not session.state.has("fade_applied")
+        # timeline_loaded and clip_exists were set before tool calls,
+        # so they remain (not provided by any tool call in history)
+        assert session.state.has("timeline_loaded")
+        assert session.state.has("clip_exists")
+
+    def test_undo_on_empty_history_returns_none(self):
+        """Undo on empty session returns None without error."""
+        session = EditingSession()
+        assert session.undo_last() is None
+
+
+# ---------------------------------------------------------------------------
+# TestSearchToCallFlow
+# ---------------------------------------------------------------------------
+
+
+class TestSearchToCallFlow:
+    """Simulates LLM agent pattern: search -> schema -> call."""
+
+    def test_search_schema_call_pattern(self, tmp_path):
+        """Simulate: user asks question -> agent searches -> gets schema -> calls tool."""
+        session = EditingSession()
+
+        # Step 1: Search
+        results = session.search_tools("trim")
+        assert len(results) > 0
+        tool_name = results[0].name
+
+        # Step 2: Get schema
+        schema = session.get_tool_schema(tool_name)
+        assert schema.requires  # has prerequisites
+        assert len(schema.params) > 0
+
+        # Step 3: Check prerequisites
+        missing = [r for r in schema.requires if not session.state.has(r)]
+        assert len(missing) > 0  # can't call yet
+
+        # Step 4: Satisfy prerequisites
+        for req in schema.requires:
+            session.state.add(req)
+
+        # Step 5: Call with params derived from schema
+        result = session.call_tool(tool_name, {
+            "clip_duration_ns": 10_000_000_000,
+            "in_ns": 0,
+            "out_ns": 5_000_000_000,
+        })
+        assert result is not None
+
+    def test_domain_browse_then_pick(self):
+        """Simulate: agent browses domains -> picks domain -> searches within it."""
+        session = EditingSession()
+        domains = session.registry.list_domains()
+        domain_names = [d["domain"] for d in domains]
+        assert len(domains) >= 10
+
+        # Browse color domain
+        color_tools = session.search_tools(domain="color")
+        assert len(color_tools) == 3
+        color_names = {t.name for t in color_tools}
+        assert "color_grade" in color_names
+        assert "cdl" in color_names
+        assert "lut_parse" in color_names
+
+        # Pick color_grade, get schema
+        schema = session.get_tool_schema("color_grade")
+        assert "timeline_loaded" in schema.requires
+        assert "clip_exists" in schema.requires
+        assert "color_graded" in schema.provides
+
+    def test_search_by_natural_query(self):
+        """Search with natural language terms returns relevant tools."""
+        session = EditingSession()
+
+        # Search for "slow motion" should find speed tool
+        results = session.search_tools("slow motion")
+        names = [r.name for r in results]
+        assert "speed" in names
+
+        # Search for "fade" should find fade tool
+        results = session.search_tools("fade")
+        names = [r.name for r in results]
+        assert "fade" in names
+
+        # Search for "subtitle" should find text overlay
+        results = session.search_tools("subtitle")
+        names = [r.name for r in results]
+        assert "add_text_overlay" in names
+
+    def test_search_returns_correct_domain(self):
+        """Each search result has the correct domain field."""
+        session = EditingSession()
+
+        for domain_entry in session.registry.list_domains():
+            domain = domain_entry["domain"]
+            tools = session.search_tools(domain=domain)
+            for tool in tools:
+                assert tool.domain == domain, (
+                    f"Tool '{tool.name}' reports domain '{tool.domain}' "
+                    f"but was found under '{domain}'"
+                )
+
+
+# ---------------------------------------------------------------------------
+# TestSessionSerialization
+# ---------------------------------------------------------------------------
+
+
+class TestSessionSerialization:
+    """Session state roundtrip and serialization."""
+
+    def test_session_to_dict_initial(self):
+        """Session serialization captures tool count, state, history on fresh session."""
+        session = EditingSession()
+        d = session.to_dict()
+        assert d["tool_count"] >= 34
+        assert d["state"] == []
+        assert d["history_length"] == 0
+        assert d["project_path"] is None
+
+    def test_session_tracks_history(self, tmp_path):
+        """Each call_tool adds to history with timestamp and provisions."""
+        session = _session_with_project(tmp_path)
+
+        session.call_tool("trim", {
+            "clip_duration_ns": 10_000_000_000,
+            "in_ns": 1_000_000_000,
+            "out_ns": 5_000_000_000,
+        })
+        session.call_tool("volume", {"level_db": -6.0})
+
+        history = session.history
+        assert len(history) == 2
+
+        # First entry
+        assert history[0].tool_name == "trim"
+        assert history[0].provisions == ["clip_trimmed"]
+        assert isinstance(history[0].timestamp, float)
+        assert history[0].timestamp > 0
+
+        # Second entry
+        assert history[1].tool_name == "volume"
+        assert history[1].provisions == ["volume_set"]
+        assert history[1].timestamp >= history[0].timestamp
+
+    def test_session_to_dict_after_tools(self, tmp_path):
+        """Serialization reflects accumulated state after tool calls."""
+        session = _session_with_project(tmp_path)
+
+        session.call_tool("trim", {
+            "clip_duration_ns": 10_000_000_000,
+            "in_ns": 1_000_000_000,
+            "out_ns": 5_000_000_000,
+        })
+
+        d = session.to_dict()
+        assert d["history_length"] == 1
+        assert "clip_trimmed" in d["state"]
+        assert "timeline_loaded" in d["state"]
+        assert d["project_path"] is not None
+
+    def test_history_records_params(self, tmp_path):
+        """History entries store the params that were passed."""
+        session = _session_with_project(tmp_path)
+
+        params = {"level_db": -9.5}
+        session.call_tool("volume", params)
+
+        entry = session.history[0]
+        assert entry.params == params
+        assert entry.result is not None
+
+
+# ---------------------------------------------------------------------------
+# TestPrerequisiteEnforcement
+# ---------------------------------------------------------------------------
+
+
+class TestPrerequisiteEnforcement:
+    """Various prerequisite failure scenarios."""
+
+    def test_cannot_trim_without_timeline(self):
+        """Trim requires timeline_loaded — fails on fresh session."""
+        session = EditingSession()
+        with pytest.raises(PrerequisiteError, match="timeline_loaded"):
+            session.call_tool("trim", {
+                "clip_duration_ns": 10_000_000_000,
+                "in_ns": 0,
+                "out_ns": 5_000_000_000,
+            })
+
+    def test_cannot_search_transcript_without_loaded(self):
+        """search_transcript requires transcript_loaded."""
+        session = EditingSession()
+        with pytest.raises(PrerequisiteError, match="transcript_loaded"):
+            session.call_tool("search_transcript", {
+                "transcript_json": "{}",
+                "query": "hello",
+            })
+
+    def test_cannot_classify_without_scenes_detected(self):
+        """classify_shots requires scenes_detected."""
+        session = EditingSession()
+        session.state.add("timeline_loaded")
+        with pytest.raises(PrerequisiteError, match="scenes_detected"):
+            session.call_tool("classify_shots", {
+                "video_path": "/tmp/v.mp4",
+                "scenes_json": "[]",
+                "output_dir": "/tmp/o",
+            })
+
+    def test_cannot_export_otio_without_timeline(self):
+        """export_otio requires timeline_loaded."""
+        session = EditingSession()
+        with pytest.raises(PrerequisiteError, match="timeline_loaded"):
+            session.call_tool("export_otio", {
+                "timeline_data_json": "{}",
+                "output_path": "/tmp/out.otio",
+            })
+
+    def test_import_otio_has_no_prerequisites(self):
+        """import_otio has no prerequisites — should not raise PrerequisiteError."""
+        schema = EditingSession().get_tool_schema("import_otio")
+        assert schema.requires == []
+        assert "timeline_loaded" in schema.provides
+
+    def test_list_render_presets_has_no_prerequisites(self):
+        """list_render_presets has no prerequisites or provisions."""
+        session = EditingSession()
+        schema = session.get_tool_schema("list_render_presets")
+        assert schema.requires == []
+        assert schema.provides == []
+
+        # Should be callable on a fresh session
+        result = session.call_tool("list_render_presets", {})
+        assert result is not None
+
+    def test_cannot_color_grade_without_clip(self, tmp_path):
+        """color_grade requires both timeline_loaded and clip_exists."""
+        session = EditingSession()
+        session.load_project(_make_xges(tmp_path))
+        # Has timeline_loaded but not clip_exists
+        with pytest.raises(PrerequisiteError, match="clip_exists"):
+            session.call_tool("color_grade", {
+                "lift_r": 0.0, "lift_g": 0.0, "lift_b": 0.0,
+                "gamma_r": 1.0, "gamma_g": 1.0, "gamma_b": 1.0,
+                "gain_r": 1.0, "gain_g": 1.0, "gain_b": 1.0,
+            })
+
+    def test_cannot_normalize_without_clip(self):
+        """normalize requires timeline_loaded and clip_exists."""
+        session = EditingSession()
+        with pytest.raises(PrerequisiteError):
+            session.call_tool("normalize", {
+                "current_peak_db": -3.0,
+                "target_peak_db": -1.0,
+            })
