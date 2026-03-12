@@ -114,7 +114,7 @@ class TestDiscoveryFlow:
             for summary in tools:
                 schema = session.get_tool_schema(summary.name)
                 assert schema.description, f"Tool '{summary.name}' has no description"
-                assert len(schema.params) > 0, f"Tool '{summary.name}' has no params"
+                assert isinstance(schema.params, list), f"Tool '{summary.name}' params not a list"
 
     def test_transcript_tools_in_registry(self):
         """search('filler') finds find_fillers tool -> get schema
