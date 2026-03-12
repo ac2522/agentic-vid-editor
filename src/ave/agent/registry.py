@@ -31,6 +31,7 @@ class ToolSummary:
     name: str
     domain: str
     description: str  # First line of docstring
+    tags: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -152,10 +153,12 @@ class ToolRegistry:
         domain: str,
         requires: list[str] | None = None,
         provides: list[str] | None = None,
+        tags: list[str] | None = None,
     ) -> Callable:
         """Decorator to register a tool function."""
         req = requires or []
         prov = provides or []
+        tag_list = tags or []
 
         def decorator(func: Callable) -> Callable:
             name = func.__name__
@@ -166,6 +169,7 @@ class ToolRegistry:
                 "domain": domain,
                 "requires": req,
                 "provides": prov,
+                "tags": tag_list,
             }
             self._dep_graph.add_tool(name, requires=req, provides=prov)
             return func
@@ -185,17 +189,19 @@ class ToolRegistry:
 
             func = info["func"]
             first_line = _first_line(func.__doc__)
-            searchable = f"{name} {first_line}".lower()
+            tags = info.get("tags", [])
+            searchable = f"{name} {first_line} {' '.join(tags)}".lower()
+            tags_tuple = tuple(tags)
 
             # If no query, match all (domain-only search)
             if not query_words:
-                results.append((0, ToolSummary(name=name, domain=info["domain"], description=first_line)))
+                results.append((0, ToolSummary(name=name, domain=info["domain"], description=first_line, tags=tags_tuple)))
                 continue
 
             # Score by word matches
             score = sum(1 for w in query_words if w in searchable)
             if score > 0:
-                results.append((score, ToolSummary(name=name, domain=info["domain"], description=first_line)))
+                results.append((score, ToolSummary(name=name, domain=info["domain"], description=first_line, tags=tags_tuple)))
 
         # Sort by score descending
         results.sort(key=lambda x: x[0], reverse=True)

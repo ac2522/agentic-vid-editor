@@ -12,6 +12,8 @@ def register_project_tools(registry: ToolRegistry) -> None:
         domain="project",
         requires=[],
         provides=["media_probed"],
+        tags=["media info", "file info", "codec info", "resolution", "duration",
+              "framerate", "metadata", "inspect file", "video info"],
     )
     def probe_media(path: str):
         """Probe a media file and return structured metadata (codec, resolution, duration)."""
@@ -25,6 +27,8 @@ def register_project_tools(registry: ToolRegistry) -> None:
         domain="project",
         requires=["media_probed"],
         provides=["media_ingested"],
+        tags=["import", "add media", "bring in", "load footage", "add clip",
+              "register asset", "import footage"],
     )
     def ingest_media(
         source: str,

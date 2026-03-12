@@ -302,3 +302,71 @@ def test_registry_duplicate_name_raises(registry: ToolRegistry) -> None:
         def add(a: int, b: int) -> int:
             """Duplicate add."""
             return a + b
+
+
+# ── test_registry_tags ─────────────────────────────────────────────────────
+
+
+def test_registry_tags_stored(registry: ToolRegistry) -> None:
+    """Tags passed to the decorator are stored and surfaced in ToolSummary."""
+
+    @registry.tool(domain="editing", tags=["cut", "shorten", "crop timeline"])
+    def trim(start_ns: int, end_ns: int) -> dict:
+        """Trim a clip to the given time range."""
+        return {"start_ns": start_ns, "end_ns": end_ns}
+
+    results = registry.search_tools("trim")
+    assert len(results) == 1
+    summary = results[0]
+    assert summary.tags == ("cut", "shorten", "crop timeline")
+
+
+def test_registry_tags_default_empty(registry: ToolRegistry) -> None:
+    """Tools registered without tags get an empty tuple."""
+    _register_add(registry)
+    results = registry.search_tools("add")
+    assert results[0].tags == ()
+
+
+def test_registry_search_by_tag(registry: ToolRegistry) -> None:
+    """Searching by a tag word finds the tool even if the word is not in
+    the tool name or docstring."""
+
+    @registry.tool(domain="editing", tags=["razor", "blade", "divide"])
+    def split(pos: int) -> dict:
+        """Split a clip at position."""
+        return {"pos": pos}
+
+    @registry.tool(domain="audio", tags=["loudness", "gain"])
+    def volume(level: float) -> dict:
+        """Set audio volume."""
+        return {"level": level}
+
+    # "razor" only appears in split's tags
+    results = registry.search_tools("razor")
+    assert len(results) == 1
+    assert results[0].name == "split"
+
+    # "gain" only appears in volume's tags
+    results = registry.search_tools("gain")
+    assert len(results) == 1
+    assert results[0].name == "volume"
+
+
+def test_registry_search_tag_boosts_score(registry: ToolRegistry) -> None:
+    """A tool matching both name/docstring AND tags should score higher."""
+
+    @registry.tool(domain="editing", tags=["cut", "shorten", "clip"])
+    def trim(start: int, end: int) -> dict:
+        """Trim a clip."""
+        return {}
+
+    @registry.tool(domain="editing", tags=["join", "append"])
+    def concatenate(clips: list) -> dict:
+        """Join clips together."""
+        return {}
+
+    # "clip" appears in trim's tags AND docstring — should rank higher
+    # than concatenate which has no "clip" match
+    results = registry.search_tools("clip")
+    assert results[0].name == "trim"

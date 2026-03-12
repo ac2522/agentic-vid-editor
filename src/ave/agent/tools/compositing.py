@@ -12,6 +12,8 @@ def register_compositing_tools(registry: ToolRegistry) -> None:
         domain="compositing",
         requires=["timeline_loaded", "clip_exists"],
         provides=["layer_order_set"],
+        tags=["z-order", "stack order", "layer stack", "bring to front",
+              "send to back", "arrange layers", "compositing order"],
     )
     def set_layer_order(layers: list):
         """Set layer ordering and compositing parameters for multiple clips."""
@@ -23,6 +25,8 @@ def register_compositing_tools(registry: ToolRegistry) -> None:
         domain="compositing",
         requires=["timeline_loaded", "clip_exists"],
         provides=["blend_mode_applied"],
+        tags=["blend", "multiply", "screen", "overlay", "mix layers",
+              "composite mode", "layer blend", "blending"],
     )
     def apply_blend_mode(blend_mode: str):
         """Apply a blend mode to a clip (e.g. over, multiply, screen, overlay)."""
@@ -35,6 +39,8 @@ def register_compositing_tools(registry: ToolRegistry) -> None:
         domain="compositing",
         requires=["timeline_loaded", "clip_exists"],
         provides=["clip_position_set"],
+        tags=["move clip", "position", "picture in picture", "PiP", "offset",
+              "place on canvas", "x y position", "reposition"],
     )
     def set_clip_position(x: int, y: int, width: int = 0, height: int = 0):
         """Set the position and optional size of a clip on the canvas."""
@@ -49,6 +55,8 @@ def register_compositing_tools(registry: ToolRegistry) -> None:
         domain="compositing",
         requires=["timeline_loaded", "clip_exists"],
         provides=["clip_alpha_set"],
+        tags=["opacity", "transparency", "see through", "transparent",
+              "fade layer", "ghost", "semi-transparent"],
     )
     def set_clip_alpha(alpha: float):
         """Set the opacity (alpha) of a clip, from 0.0 (transparent) to 1.0 (opaque)."""

@@ -12,6 +12,9 @@ def register_interchange_tools(registry: ToolRegistry) -> None:
         domain="interchange",
         requires=["timeline_loaded"],
         provides=["otio_exported"],
+        tags=["export timeline", "OpenTimelineIO", "OTIO", "FCP XML", "EDL",
+              "DaVinci Resolve", "Premiere", "Final Cut", "round trip",
+              "interchange"],
     )
     def export_otio(
         timeline_data_json: str,
@@ -32,6 +35,9 @@ def register_interchange_tools(registry: ToolRegistry) -> None:
         domain="interchange",
         requires=[],
         provides=["timeline_loaded"],
+        tags=["import timeline", "load edit", "open project", "import EDL",
+              "import FCP XML", "load OTIO", "import from DaVinci",
+              "import from Premiere"],
     )
     def import_otio(otio_path: str):
         """Import a timeline from an OpenTimelineIO file."""
