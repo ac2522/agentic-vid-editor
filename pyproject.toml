@@ -42,6 +42,7 @@ markers = [
     "whisper: marks tests that require pywhispercpp (deselect with '-m \"not whisper\"')",
     "scenedetect: marks tests that require PySceneDetect",
     "vision: marks tests that require ONNX Runtime + vision model",
+    "llm: marks tests that require Anthropic API key (deselect with '-m \"not llm\"')",
 ]
 asyncio_mode = "auto"
 

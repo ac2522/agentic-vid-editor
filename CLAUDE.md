@@ -22,5 +22,6 @@ See `docs/plans/2026-03-08-architecture-design-v2.md` for full architecture.
 ## Test Markers
 - `@pytest.mark.gpu` — requires NVIDIA GPU
 - `@pytest.mark.slow` — takes >10 seconds
+- `@pytest.mark.llm` — requires ANTHROPIC_API_KEY (real LLM calls, costs tokens)
 - `@requires_ffmpeg` — requires FFmpeg binary
 - `@requires_ges` — requires GES/GStreamer Python bindings
