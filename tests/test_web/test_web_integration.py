@@ -129,11 +129,15 @@ class TestWebSocketChat:
         assert msg2["session_token"] == token
         await ws2.close()
 
-    async def test_message_returns_agent_not_connected(self, client):
+    async def test_message_returns_error_without_anthropic(self, client):
         ws = await client.ws_connect("/ws/chat")
         _connected = await ws.receive_json()
         await ws.send_json({"type": "message", "text": "hello"})
         resp = await ws.receive_json()
         assert resp["type"] == "error"
-        assert "Agent not yet connected" in resp["message"]
+        # Either "anthropic package not installed" or "Agent not available"
+        assert any(
+            phrase in resp["message"]
+            for phrase in ("anthropic", "Agent not available")
+        )
         await ws.close()

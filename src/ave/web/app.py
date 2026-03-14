@@ -6,15 +6,22 @@ serving, and a WebSocket handler for the agent chat interface.
 
 from __future__ import annotations
 
-import json
+import logging
 import uuid
 from pathlib import Path
 
 from aiohttp import web
 
 from ave.web.api import get_assets_response, get_timeline_response
-from ave.web.chat import format_connected, format_error, parse_client_message
+from ave.web.chat import (
+    ChatSession,
+    format_connected,
+    format_error,
+    parse_client_message,
+)
 from ave.web.timeline_model import TimelineModel
+
+logger = logging.getLogger(__name__)
 
 # 1x1 transparent PNG (placeholder thumbnail)
 _PLACEHOLDER_PNG = (
@@ -61,23 +68,41 @@ async def _handle_thumbnail(request: web.Request) -> web.Response:
     return web.Response(body=_PLACEHOLDER_PNG, content_type="image/png")
 
 
+def _create_chat_session(timeline_model: TimelineModel) -> ChatSession | None:
+    """Try to create a ChatSession with full orchestrator.
+
+    Returns ``None`` if dependencies (e.g. tool modules) are unavailable.
+    """
+    try:
+        from ave.agent.orchestrator import Orchestrator
+        from ave.agent.session import EditingSession
+
+        editing_session = EditingSession()
+        orchestrator = Orchestrator(editing_session)
+        return ChatSession(orchestrator, timeline_model)
+    except Exception:
+        logger.debug("Could not create ChatSession — dependencies missing", exc_info=True)
+        return None
+
+
 async def _handle_chat_ws(request: web.Request) -> web.WebSocketResponse:
     """WebSocket handler for the agent chat interface."""
     ws = web.WebSocketResponse()
     await ws.prepare(request)
 
     sessions: dict = request.app["sessions"]
+    timeline_model: TimelineModel = request.app["timeline_model"]
 
     # Determine session token: reuse from query string or generate new
     token = request.query.get("session")
     if token and token in sessions:
         # Existing session — reconnect
-        session = sessions[token]
+        chat_session = sessions[token]
     else:
         # New session
         token = uuid.uuid4().hex
-        session = {"token": token, "history": []}
-        sessions[token] = session
+        chat_session = _create_chat_session(timeline_model)
+        sessions[token] = chat_session
 
     # Send connected acknowledgement
     await ws.send_json(format_connected(token))
@@ -89,7 +114,13 @@ async def _handle_chat_ws(request: web.Request) -> web.WebSocketResponse:
             if parsed.get("type") == "error":
                 await ws.send_json(parsed)
             elif parsed.get("type") == "message":
-                await ws.send_json(format_error("Agent not yet connected"))
+                if chat_session is None:
+                    await ws.send_json(format_error("Agent not available"))
+                else:
+                    await chat_session.handle_message(ws, parsed.get("text", ""))
+            elif parsed.get("type") == "cancel":
+                if chat_session is not None:
+                    chat_session.cancel()
             else:
                 await ws.send_json(
                     format_error(f"Unknown message type: {parsed.get('type')}")
