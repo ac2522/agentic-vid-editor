@@ -103,3 +103,23 @@ class TimelineModel:
 
         self.layers[clip.layer_index].clips.append(clip)
         self._clip_index[clip.clip_id] = clip
+
+    def remove_clip(self, clip_id: str) -> None:
+        """Remove a clip by ID. Raises KeyError if not found."""
+        clip = self._clip_index.pop(clip_id)  # raises KeyError
+        self.layers[clip.layer_index].clips.remove(clip)
+
+    def update_clip(self, clip_id: str, **kwargs: Any) -> None:
+        """Update clip attributes. Raises KeyError if not found."""
+        clip = self.get_clip(clip_id)
+        for key, value in kwargs.items():
+            if not hasattr(clip, key):
+                raise AttributeError(f"ClipState has no attribute {key!r}")
+            setattr(clip, key, value)
+
+    def get_clip(self, clip_id: str) -> ClipState:
+        """Get a clip by ID. Raises KeyError if not found."""
+        try:
+            return self._clip_index[clip_id]
+        except KeyError:
+            raise KeyError(f"Clip not found: {clip_id!r}") from None

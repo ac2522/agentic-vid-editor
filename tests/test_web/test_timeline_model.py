@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import json
 
+import pytest
+
 from ave.web.timeline_model import ClipState, LayerState, TimelineModel
 
 
@@ -126,3 +128,93 @@ class TestTimelineModelSerialization:
         assert len(d["layers"]) == 1
         assert len(d["layers"][0]["clips"]) == 1
         assert d["layers"][0]["clips"][0]["clip_id"] == "c1"
+
+
+# ---------------------------------------------------------------------------
+# Task 2: Clip CRUD
+# ---------------------------------------------------------------------------
+
+
+class TestClipCRUD:
+    def test_add_clip_creates_layer(self):
+        tm = TimelineModel()
+        clip = ClipState(
+            clip_id="c1", asset_uri="", name="c1", layer_index=2,
+            start_ns=0, duration_ns=1000, inpoint_ns=0, track_types=6,
+        )
+        tm.add_clip(clip)
+        # Layers 0, 1 should be created as empty; layer 2 has the clip
+        assert len(tm.layers) == 3
+        assert len(tm.layers[0].clips) == 0
+        assert len(tm.layers[1].clips) == 0
+        assert len(tm.layers[2].clips) == 1
+
+    def test_add_clip_to_existing_layer(self):
+        tm = TimelineModel()
+        c1 = ClipState(
+            clip_id="c1", asset_uri="", name="c1", layer_index=0,
+            start_ns=0, duration_ns=1000, inpoint_ns=0, track_types=6,
+        )
+        c2 = ClipState(
+            clip_id="c2", asset_uri="", name="c2", layer_index=0,
+            start_ns=1000, duration_ns=1000, inpoint_ns=0, track_types=6,
+        )
+        tm.add_clip(c1)
+        tm.add_clip(c2)
+        assert len(tm.layers[0].clips) == 2
+
+    def test_add_clip_duplicate_id_raises(self):
+        tm = TimelineModel()
+        clip = ClipState(
+            clip_id="c1", asset_uri="", name="c1", layer_index=0,
+            start_ns=0, duration_ns=1000, inpoint_ns=0, track_types=6,
+        )
+        tm.add_clip(clip)
+        with pytest.raises(ValueError, match="Duplicate clip_id"):
+            tm.add_clip(clip)
+
+    def test_remove_clip(self):
+        tm = TimelineModel()
+        clip = ClipState(
+            clip_id="c1", asset_uri="", name="c1", layer_index=0,
+            start_ns=0, duration_ns=1000, inpoint_ns=0, track_types=6,
+        )
+        tm.add_clip(clip)
+        tm.remove_clip("c1")
+        assert len(tm.layers[0].clips) == 0
+
+    def test_remove_clip_not_found(self):
+        tm = TimelineModel()
+        with pytest.raises(KeyError):
+            tm.remove_clip("nonexistent")
+
+    def test_update_clip(self):
+        tm = TimelineModel()
+        clip = ClipState(
+            clip_id="c1", asset_uri="", name="c1", layer_index=0,
+            start_ns=0, duration_ns=1000, inpoint_ns=0, track_types=6,
+        )
+        tm.add_clip(clip)
+        tm.update_clip("c1", start_ns=500, duration_ns=2000)
+        updated = tm.get_clip("c1")
+        assert updated.start_ns == 500
+        assert updated.duration_ns == 2000
+
+    def test_update_clip_not_found(self):
+        tm = TimelineModel()
+        with pytest.raises(KeyError):
+            tm.update_clip("nonexistent", start_ns=0)
+
+    def test_get_clip(self):
+        tm = TimelineModel()
+        clip = ClipState(
+            clip_id="c1", asset_uri="", name="c1", layer_index=0,
+            start_ns=0, duration_ns=1000, inpoint_ns=0, track_types=6,
+        )
+        tm.add_clip(clip)
+        assert tm.get_clip("c1") is clip
+
+    def test_get_clip_not_found(self):
+        tm = TimelineModel()
+        with pytest.raises(KeyError):
+            tm.get_clip("nonexistent")
