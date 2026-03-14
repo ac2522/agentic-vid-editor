@@ -127,6 +127,37 @@ class TestAudioEffectsE2E:
         assert info.has_audio, "Rendered output must contain an audio stream"
         assert info.duration_seconds == pytest.approx(duration_s, abs=0.5)
 
+    def test_fade_in_out_renders(self, tmp_path: Path) -> None:
+        """Apply fade-in and fade-out via apply_fade, render, verify output."""
+        from ave.ingest.probe import probe_media
+        from ave.project.operations import apply_fade
+        from ave.project.timeline import Timeline
+        from ave.render.proxy import render_proxy
+
+        clip_path = tmp_path / "source.mp4"
+        duration_s = 5
+        generate_av_clip(clip_path, duration=duration_s, width=320, height=240, fps=24)
+
+        xges_path = tmp_path / "timeline.xges"
+        tl = Timeline.create(xges_path, fps=24.0)
+        clip_id = tl.add_clip(
+            clip_path,
+            layer=0,
+            start_ns=0,
+            duration_ns=duration_s * _NS_PER_SEC,
+        )
+
+        apply_fade(tl, clip_id, fade_in_ns=1 * _NS_PER_SEC, fade_out_ns=1 * _NS_PER_SEC)
+        tl.save()
+
+        output_path = tmp_path / "rendered_fade_op.mp4"
+        render_proxy(xges_path, output_path, height=240)
+
+        assert output_path.exists()
+        info = probe_media(output_path)
+        assert info.has_audio
+        assert info.duration_seconds == pytest.approx(duration_s, abs=0.5)
+
 
 # ===========================================================================
 # TestTranscriptionE2E

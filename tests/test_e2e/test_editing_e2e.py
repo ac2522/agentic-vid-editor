@@ -290,3 +290,74 @@ class TestCombinedEditsE2E:
 
         info = _render_and_probe(project_dir, "concat_trim.mp4")
         assert info.duration_seconds == pytest.approx(3.0, abs=0.5)
+
+
+# ---------------------------------------------------------------------------
+# Speed E2E
+# ---------------------------------------------------------------------------
+
+
+@requires_ges
+@requires_ffmpeg
+@pytest.mark.slow
+class TestSpeedE2E:
+    """Verify speed change across the full pipeline."""
+
+    def test_double_speed_halves_duration(self, ingested):
+        """Apply 2x speed to a 4s clip, render, verify ~2s output."""
+        from ave.project.operations import set_speed
+
+        entry, _registry, project_dir = ingested
+
+        tl = _build_timeline(project_dir)
+        clip_id = tl.add_clip(
+            media_path=entry.working_path,
+            layer=0,
+            start_ns=0,
+            duration_ns=4 * SEC,
+        )
+
+        set_speed(tl, clip_id, rate=2.0)
+        tl.save()
+
+        info = _render_and_probe(project_dir, "speed_2x.mp4")
+        assert info.duration_seconds == pytest.approx(2.0, abs=0.5)
+
+
+# ---------------------------------------------------------------------------
+# Transition E2E
+# ---------------------------------------------------------------------------
+
+
+@requires_ges
+@requires_ffmpeg
+@pytest.mark.slow
+class TestTransitionE2E:
+    """Verify transition across the full pipeline."""
+
+    def test_crossfade_shortens_total_duration(self, ingested):
+        """Concatenate two 3s clips with 1s crossfade, render, verify ~5s output."""
+        from ave.project.operations import apply_transition, concatenate_clips
+        from ave.tools.transitions import TransitionType
+
+        entry, _registry, project_dir = ingested
+
+        tl = _build_timeline(project_dir)
+        clip_ids = concatenate_clips(
+            tl,
+            media_paths=[entry.working_path, entry.working_path],
+            durations_ns=[3 * SEC, 3 * SEC],
+            layer=0,
+        )
+
+        apply_transition(
+            tl,
+            clip_ids[0],
+            clip_ids[1],
+            transition_type=TransitionType.CROSSFADE,
+            duration_ns=1 * SEC,
+        )
+        tl.save()
+
+        info = _render_and_probe(project_dir, "crossfade.mp4")
+        assert info.duration_seconds == pytest.approx(5.0, abs=0.5)
