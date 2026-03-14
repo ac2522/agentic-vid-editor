@@ -274,3 +274,50 @@ class TestOperationsVerification:
                 assert node.module != "gi.repository", (
                     "split_clip must not import from gi.repository"
                 )
+
+
+@requires_ges
+@requires_ffmpeg
+class TestTimelineVolume:
+    @pytest.fixture(autouse=True)
+    def _setup(self, fixtures_dir: Path, tmp_project: Path):
+        self.clip_path = fixtures_dir / "av_clip_1080p24.mp4"
+        if not self.clip_path.exists():
+            from tests.fixtures.generate import generate_av_clip
+
+            generate_av_clip(self.clip_path)
+        self.project = tmp_project
+
+    def test_set_volume(self):
+        from ave.project.timeline import Timeline
+        from ave.project.operations import set_volume
+
+        tl = Timeline.create(self.project / "project.xges", fps=24.0)
+        clip_id = tl.add_clip(
+            media_path=self.clip_path,
+            layer=0,
+            start_ns=0,
+            duration_ns=3_000_000_000,
+        )
+
+        effect_id = set_volume(tl, clip_id, level_db=-6.0)
+
+        actual = tl.get_effect_property(clip_id, effect_id, "volume")
+        assert abs(actual - 0.5012) < 0.01
+
+    def test_set_volume_zero_db(self):
+        from ave.project.timeline import Timeline
+        from ave.project.operations import set_volume
+
+        tl = Timeline.create(self.project / "project.xges", fps=24.0)
+        clip_id = tl.add_clip(
+            media_path=self.clip_path,
+            layer=0,
+            start_ns=0,
+            duration_ns=3_000_000_000,
+        )
+
+        effect_id = set_volume(tl, clip_id, level_db=0.0)
+
+        actual = tl.get_effect_property(clip_id, effect_id, "volume")
+        assert abs(actual - 1.0) < 0.001

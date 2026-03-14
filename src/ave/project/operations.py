@@ -10,6 +10,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from ave.tools.audio import compute_volume
 from ave.tools.edit import compute_trim, compute_split, compute_concatenation
 
 if TYPE_CHECKING:
@@ -126,3 +127,23 @@ def concatenate_clips(
         clip_ids.append(clip_id)
 
     return clip_ids
+
+
+def set_volume(timeline: Timeline, clip_id: str, level_db: float) -> str:
+    """Set volume on a clip by adding a volume GES.Effect.
+
+    Returns the effect_id for the added volume effect.
+    """
+    params = compute_volume(level_db)
+
+    effect_id = timeline.add_effect(clip_id, "volume")
+    timeline.set_effect_property(clip_id, effect_id, "volume", params.linear_gain)
+
+    # P0-5: Verify
+    actual = timeline.get_effect_property(clip_id, effect_id, "volume")
+    if abs(actual - params.linear_gain) > 0.001:
+        raise OperationError(
+            f"Volume not applied: expected {params.linear_gain}, got {actual}"
+        )
+
+    return effect_id
