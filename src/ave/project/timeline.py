@@ -303,6 +303,14 @@ class Timeline:
         clip = self.get_clip(clip_id)
         return clip.get_meta(key)
 
+    def enable_auto_transitions(self, enabled: bool = True) -> None:
+        """Enable or disable automatic transitions when clips overlap on a layer.
+
+        When enabled, GES automatically creates a crossfade TransitionClip
+        in the overlap region between two clips on the same layer.
+        """
+        self._timeline.set_auto_transition(enabled)
+
     def save(self) -> None:
         """Save timeline to XGES file."""
         self._path.parent.mkdir(parents=True, exist_ok=True)
