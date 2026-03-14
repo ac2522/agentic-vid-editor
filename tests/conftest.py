@@ -58,6 +58,15 @@ def _vision_available() -> bool:
         return False
 
 
+def _aiohttp_available() -> bool:
+    try:
+        import aiohttp  # noqa: F401
+
+        return True
+    except ImportError:
+        return False
+
+
 def _gpu_available() -> bool:
     try:
         result = subprocess.run(["nvidia-smi"], capture_output=True, check=True, text=True)
@@ -75,6 +84,7 @@ requires_scenedetect = pytest.mark.skipif(
     not _scenedetect_available(), reason="PySceneDetect not available"
 )
 requires_vision = pytest.mark.skipif(not _vision_available(), reason="ONNX Runtime not available")
+requires_aiohttp = pytest.mark.skipif(not _aiohttp_available(), reason="aiohttp not installed")
 
 
 @pytest.fixture(scope="session")
