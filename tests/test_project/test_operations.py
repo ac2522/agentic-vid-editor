@@ -391,6 +391,70 @@ class TestTimelineFade:
 
 @requires_ges
 @requires_ffmpeg
+class TestTimelineTransition:
+    @pytest.fixture(autouse=True)
+    def _setup(self, fixtures_dir: Path, tmp_project: Path):
+        self.clip_path = fixtures_dir / "av_clip_1080p24.mp4"
+        if not self.clip_path.exists():
+            from tests.fixtures.generate import generate_av_clip
+
+            generate_av_clip(self.clip_path)
+        self.project = tmp_project
+
+    def test_apply_crossfade(self):
+        from ave.project.timeline import Timeline
+        from ave.project.operations import apply_transition, concatenate_clips
+        from ave.tools.transitions import TransitionType
+
+        tl = Timeline.create(self.project / "project.xges", fps=24.0)
+
+        clip_ids = concatenate_clips(
+            tl,
+            media_paths=[self.clip_path, self.clip_path],
+            durations_ns=[3_000_000_000, 3_000_000_000],
+            layer=0,
+        )
+
+        apply_transition(
+            tl,
+            clip_ids[0],
+            clip_ids[1],
+            transition_type=TransitionType.CROSSFADE,
+            duration_ns=1_000_000_000,
+        )
+
+        # 3s + 3s - 1s overlap = 5s
+        assert tl.duration_ns == 5_000_000_000
+
+    def test_apply_transition_preserves_clips(self):
+        from ave.project.timeline import Timeline
+        from ave.project.operations import apply_transition, concatenate_clips
+        from ave.tools.transitions import TransitionType
+
+        tl = Timeline.create(self.project / "project.xges", fps=24.0)
+
+        clip_ids = concatenate_clips(
+            tl,
+            media_paths=[self.clip_path, self.clip_path],
+            durations_ns=[3_000_000_000, 3_000_000_000],
+            layer=0,
+        )
+
+        apply_transition(
+            tl,
+            clip_ids[0],
+            clip_ids[1],
+            transition_type=TransitionType.CROSSFADE,
+            duration_ns=1_000_000_000,
+        )
+
+        # Both source clips should still be accessible
+        assert tl.get_clip(clip_ids[0]) is not None
+        assert tl.get_clip(clip_ids[1]) is not None
+
+
+@requires_ges
+@requires_ffmpeg
 class TestTimelineSpeed:
     @pytest.fixture(autouse=True)
     def _setup(self, fixtures_dir: Path, tmp_project: Path):

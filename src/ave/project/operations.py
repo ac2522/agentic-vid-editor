@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING
 from ave.tools.audio import compute_volume, compute_fade
 from ave.tools.edit import compute_trim, compute_split, compute_concatenation
 from ave.tools.speed import compute_speed_change
+from ave.tools.transitions import TransitionType, compute_transition
 
 if TYPE_CHECKING:
     from ave.project.timeline import Timeline
@@ -243,3 +244,64 @@ def set_speed(
             f"Speed duration not applied: expected {params.new_duration_ns}, "
             f"got {actual_duration}"
         )
+
+
+def apply_transition(
+    timeline: Timeline,
+    clip_a_id: str,
+    clip_b_id: str,
+    transition_type: TransitionType,
+    duration_ns: int,
+) -> None:
+    """Apply a transition between two adjacent clips.
+
+    Enables auto-transitions on the timeline, then moves clip_b earlier
+    to create an overlap. GES auto-creates a TransitionClip in the overlap.
+    For non-crossfade types, sets the vtype on the auto-created transition.
+    """
+    import gi
+
+    gi.require_version("GES", "1.0")
+    from gi.repository import GES as _GES
+
+    clip_a = timeline.get_clip(clip_a_id)
+    clip_b = timeline.get_clip(clip_b_id)
+
+    clip_a_end = clip_a.get_start() + clip_a.get_duration()
+    clip_b_start = clip_b.get_start()
+    clip_b_duration = clip_b.get_duration()
+
+    params = compute_transition(
+        clip_a_end, clip_b_start, transition_type, duration_ns, clip_b_duration
+    )
+
+    # Enable auto-transitions
+    timeline.enable_auto_transitions(True)
+
+    # Move clip_b to create overlap
+    clip_b.set_start(params.clip_b_new_start_ns)
+
+    # P0-5: Verify clip_b moved
+    actual_start = clip_b.get_start()
+    if actual_start != params.clip_b_new_start_ns:
+        raise OperationError(
+            f"Transition not applied: clip_b start expected {params.clip_b_new_start_ns}, "
+            f"got {actual_start}"
+        )
+
+    # For non-crossfade types, find the auto-created TransitionClip and set vtype
+    if transition_type not in (TransitionType.CROSSFADE, TransitionType.FADE_TO_BLACK):
+        _GES_TRANSITION_TYPES = {
+            TransitionType.WIPE_LEFT: _GES.VideoStandardTransitionType.BAR_WIPE_LR,
+            TransitionType.WIPE_RIGHT: _GES.VideoStandardTransitionType.BAR_WIPE_LR,
+            TransitionType.WIPE_UP: _GES.VideoStandardTransitionType.BAR_WIPE_TB,
+            TransitionType.WIPE_DOWN: _GES.VideoStandardTransitionType.BAR_WIPE_TB,
+        }
+        layer = clip_b.get_layer()
+        if layer:
+            for clip in layer.get_clips():
+                if isinstance(clip, _GES.TransitionClip):
+                    ges_vtype = _GES_TRANSITION_TYPES.get(transition_type)
+                    if ges_vtype is not None:
+                        clip.set_child_property("vtype", ges_vtype)
+                    break
