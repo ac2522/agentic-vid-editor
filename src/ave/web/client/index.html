@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AVE — Agentic Video Editor</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <header id="header">
+    <h1>AVE</h1>
+    <button id="assets-toggle" title="Toggle asset browser">Assets</button>
+  </header>
+
+  <main id="app">
+    <!-- Left: Chat panel -->
+    <section id="chat-panel">
+      <div id="chat-messages"></div>
+      <div id="chat-input-area">
+        <textarea id="chat-input" placeholder="Describe an edit..." rows="2"></textarea>
+        <button id="chat-send">Send</button>
+      </div>
+    </section>
+
+    <!-- Right: Preview + Timeline -->
+    <section id="right-panel">
+      <div id="preview-area">
+        <div id="preview-container">
+          <video id="preview-video" muted></video>
+          <canvas id="preview-canvas"></canvas>
+        </div>
+        <div id="preview-controls">
+          <button id="btn-play" title="Play">&#9654;</button>
+          <button id="btn-pause" title="Pause" disabled>&#9646;&#9646;</button>
+          <input id="seek-bar" type="range" min="0" max="1000" value="0" step="1">
+          <span id="timecode">00:00:00.000</span>
+        </div>
+      </div>
+      <div id="timeline-area">
+        <canvas id="timeline-canvas"></canvas>
+      </div>
+    </section>
+  </main>
+
+  <!-- Asset browser (hidden by default) -->
+  <section id="asset-browser" class="hidden">
+    <div id="asset-grid"></div>
+  </section>
+
+  <script src="/static/preview.js"></script>
+  <script src="/static/timeline.js"></script>
+  <script src="/static/chat.js"></script>
+  <script src="/static/assets.js"></script>
+</body>
+</html>
