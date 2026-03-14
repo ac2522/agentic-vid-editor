@@ -18,3 +18,4 @@ tests/fixtures/*.ts
 !tests/fixtures/*.xges
 .venv/
 .env
+.worktrees/
