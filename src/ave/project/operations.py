@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING
 
 from ave.tools.audio import compute_volume, compute_fade
 from ave.tools.edit import compute_trim, compute_split, compute_concatenation
+from ave.tools.speed import compute_speed_change
 
 if TYPE_CHECKING:
     from ave.project.timeline import Timeline
@@ -207,3 +208,38 @@ def apply_fade(
         cs.set(clip_duration, UNITY)
 
     return effect_id
+
+
+def set_speed(
+    timeline: Timeline,
+    clip_id: str,
+    rate: float,
+    preserve_pitch: bool = True,
+) -> None:
+    """Set playback speed on a clip.
+
+    Adds a pitch GStreamer effect for audio speed control and adjusts
+    clip duration to match the new rate.
+    """
+    clip = timeline.get_clip(clip_id)
+    current_duration = clip.get_duration()
+
+    params = compute_speed_change(current_duration, rate, preserve_pitch)
+
+    # Add pitch effect for audio speed control
+    effect_id = timeline.add_effect(clip_id, "pitch")
+    if preserve_pitch:
+        timeline.set_effect_property(clip_id, effect_id, "tempo", rate)
+    else:
+        timeline.set_effect_property(clip_id, effect_id, "rate", rate)
+
+    # Adjust clip duration
+    clip.set_duration(params.new_duration_ns)
+
+    # P0-5: Verify
+    actual_duration = clip.get_duration()
+    if actual_duration != params.new_duration_ns:
+        raise OperationError(
+            f"Speed duration not applied: expected {params.new_duration_ns}, "
+            f"got {actual_duration}"
+        )

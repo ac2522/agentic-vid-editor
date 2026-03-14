@@ -387,3 +387,67 @@ class TestTimelineFade:
         effect_id = apply_fade(tl, clip_id, fade_in_ns=0, fade_out_ns=2_000_000_000)
 
         assert effect_id is not None
+
+
+@requires_ges
+@requires_ffmpeg
+class TestTimelineSpeed:
+    @pytest.fixture(autouse=True)
+    def _setup(self, fixtures_dir: Path, tmp_project: Path):
+        self.clip_path = fixtures_dir / "av_clip_1080p24.mp4"
+        if not self.clip_path.exists():
+            from tests.fixtures.generate import generate_av_clip
+
+            generate_av_clip(self.clip_path)
+        self.project = tmp_project
+
+    def test_set_speed_double(self):
+        from ave.project.timeline import Timeline
+        from ave.project.operations import set_speed
+
+        tl = Timeline.create(self.project / "project.xges", fps=24.0)
+        clip_id = tl.add_clip(
+            media_path=self.clip_path,
+            layer=0,
+            start_ns=0,
+            duration_ns=4_000_000_000,
+        )
+
+        set_speed(tl, clip_id, rate=2.0)
+
+        clip = tl.get_clip(clip_id)
+        assert clip.get_duration() == 2_000_000_000
+
+    def test_set_speed_half(self):
+        from ave.project.timeline import Timeline
+        from ave.project.operations import set_speed
+
+        tl = Timeline.create(self.project / "project.xges", fps=24.0)
+        clip_id = tl.add_clip(
+            media_path=self.clip_path,
+            layer=0,
+            start_ns=0,
+            duration_ns=2_000_000_000,
+        )
+
+        set_speed(tl, clip_id, rate=0.5)
+
+        clip = tl.get_clip(clip_id)
+        assert clip.get_duration() == 4_000_000_000
+
+    def test_set_speed_preserves_position(self):
+        from ave.project.timeline import Timeline
+        from ave.project.operations import set_speed
+
+        tl = Timeline.create(self.project / "project.xges", fps=24.0)
+        clip_id = tl.add_clip(
+            media_path=self.clip_path,
+            layer=0,
+            start_ns=1_000_000_000,
+            duration_ns=4_000_000_000,
+        )
+
+        set_speed(tl, clip_id, rate=2.0)
+
+        clip = tl.get_clip(clip_id)
+        assert clip.get_start() == 1_000_000_000
