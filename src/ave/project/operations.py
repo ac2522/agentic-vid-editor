@@ -10,7 +10,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from ave.tools.audio import compute_volume
+from ave.tools.audio import compute_volume, compute_fade
 from ave.tools.edit import compute_trim, compute_split, compute_concatenation
 
 if TYPE_CHECKING:
@@ -145,5 +145,65 @@ def set_volume(timeline: Timeline, clip_id: str, level_db: float) -> str:
         raise OperationError(
             f"Volume not applied: expected {params.linear_gain}, got {actual}"
         )
+
+    return effect_id
+
+
+def apply_fade(
+    timeline: Timeline,
+    clip_id: str,
+    fade_in_ns: int,
+    fade_out_ns: int,
+) -> str:
+    """Apply audio fade-in and/or fade-out to a clip.
+
+    Creates a volume effect with keyframed control source.
+    GstController.DirectControlBinding normalizes 0.0-1.0 to the element's
+    property range (volume: 0.0-10.0), so unity gain = 0.1 in control source.
+
+    Returns the effect_id for the added volume effect.
+    """
+    import gi
+
+    gi.require_version("Gst", "1.0")
+    gi.require_version("GstController", "1.0")
+    from gi.repository import GstController
+
+    clip = timeline.get_clip(clip_id)
+    clip_duration = clip.get_duration()
+
+    params = compute_fade(clip_duration, fade_in_ns, fade_out_ns)
+
+    # Add volume effect
+    effect_id = timeline.add_effect(clip_id, "volume")
+
+    # Get the GES.Effect object to attach control binding
+    effect = timeline._get_effect(clip_id, effect_id)
+
+    # Create interpolation control source
+    cs = GstController.InterpolationControlSource()
+    cs.set_property("mode", GstController.InterpolationMode.LINEAR)
+
+    cb = GstController.DirectControlBinding.new(effect, "volume", cs)
+    effect.add_control_binding(cb)
+
+    # Unity gain in DirectControlBinding normalized space:
+    # volume range is [0.0, 10.0], so 1.0 linear = 0.1 in control source
+    UNITY = 0.1
+    SILENCE = 0.0
+
+    # Set keyframes
+    if params.fade_in_ns > 0:
+        cs.set(0, SILENCE)
+        cs.set(params.fade_in_ns, UNITY)
+    else:
+        cs.set(0, UNITY)
+
+    if params.fade_out_ns > 0:
+        fade_out_start = clip_duration - params.fade_out_ns
+        cs.set(fade_out_start, UNITY)
+        cs.set(clip_duration, SILENCE)
+    elif params.fade_in_ns == 0:
+        cs.set(clip_duration, UNITY)
 
     return effect_id

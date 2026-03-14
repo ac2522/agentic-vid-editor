@@ -321,3 +321,69 @@ class TestTimelineVolume:
 
         actual = tl.get_effect_property(clip_id, effect_id, "volume")
         assert abs(actual - 1.0) < 0.001
+
+
+@requires_ges
+@requires_ffmpeg
+class TestTimelineFade:
+    @pytest.fixture(autouse=True)
+    def _setup(self, fixtures_dir: Path, tmp_project: Path):
+        self.clip_path = fixtures_dir / "av_clip_1080p24.mp4"
+        if not self.clip_path.exists():
+            from tests.fixtures.generate import generate_av_clip
+
+            generate_av_clip(self.clip_path)
+        self.project = tmp_project
+
+    def test_apply_fade_in(self):
+        from ave.project.timeline import Timeline
+        from ave.project.operations import apply_fade
+
+        tl = Timeline.create(self.project / "project.xges", fps=24.0)
+        clip_id = tl.add_clip(
+            media_path=self.clip_path,
+            layer=0,
+            start_ns=0,
+            duration_ns=5_000_000_000,
+        )
+
+        effect_id = apply_fade(tl, clip_id, fade_in_ns=1_000_000_000, fade_out_ns=0)
+
+        assert effect_id is not None
+        # Volume effect should exist
+        actual = tl.get_effect_property(clip_id, effect_id, "volume")
+        assert actual is not None
+
+    def test_apply_fade_both(self):
+        from ave.project.timeline import Timeline
+        from ave.project.operations import apply_fade
+
+        tl = Timeline.create(self.project / "project.xges", fps=24.0)
+        clip_id = tl.add_clip(
+            media_path=self.clip_path,
+            layer=0,
+            start_ns=0,
+            duration_ns=5_000_000_000,
+        )
+
+        effect_id = apply_fade(
+            tl, clip_id, fade_in_ns=1_000_000_000, fade_out_ns=1_000_000_000
+        )
+
+        assert effect_id is not None
+
+    def test_apply_fade_out_only(self):
+        from ave.project.timeline import Timeline
+        from ave.project.operations import apply_fade
+
+        tl = Timeline.create(self.project / "project.xges", fps=24.0)
+        clip_id = tl.add_clip(
+            media_path=self.clip_path,
+            layer=0,
+            start_ns=0,
+            duration_ns=5_000_000_000,
+        )
+
+        effect_id = apply_fade(tl, clip_id, fade_in_ns=0, fade_out_ns=2_000_000_000)
+
+        assert effect_id is not None
