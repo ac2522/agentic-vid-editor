@@ -55,3 +55,30 @@ def register_project_tools(registry: ToolRegistry) -> None:
             codec=codec,
             profile=profile,
         )
+
+    @registry.tool(
+        domain="project",
+        requires=["timeline_loaded"],
+        provides=["clip_exists"],
+        tags=["clip list", "clips", "timeline clips", "clip info", "clip names",
+              "what clips", "show clips", "clip inventory", "clip count",
+              "which clips", "list all clips"],
+    )
+    def list_clips(xges_path: str) -> list:
+        """List all clips on the timeline with IDs, positions, durations, and track info."""
+        from ave.tools.timeline_info import list_timeline_clips
+
+        return list_timeline_clips(xges_path)
+
+    @registry.tool(
+        domain="project",
+        requires=["timeline_loaded"],
+        provides=[],
+        tags=["timeline info", "timeline duration", "timeline summary",
+              "how long", "framerate", "fps", "layer count", "project info"],
+    )
+    def timeline_info(xges_path: str) -> dict:
+        """Get timeline summary: duration, framerate, layer count, clip count."""
+        from ave.tools.timeline_info import get_timeline_info
+
+        return get_timeline_info(xges_path)
