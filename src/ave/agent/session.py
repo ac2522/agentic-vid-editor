@@ -1,11 +1,15 @@
 """Editing session manager — lifecycle for agent-driven editing.
 
 Manages: project loading, tool execution with state tracking,
-undo history, and session serialization.
+undo history, snapshot-based rollback, and session serialization.
+
+All tool calls are serialized via a threading lock to ensure
+snapshot and provision consistency when subagents run concurrently.
 """
 
 from __future__ import annotations
 
+import threading
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -13,6 +17,7 @@ from typing import Any
 
 from ave.agent.registry import ToolRegistry, PrerequisiteError
 from ave.agent.dependencies import SessionState
+from ave.project.snapshots import SnapshotManager
 
 
 class SessionError(Exception):
@@ -36,15 +41,19 @@ class EditingSession:
     Provides:
     - Project loading (sets timeline_loaded state)
     - Tool execution with prerequisite validation and state tracking
+    - XGES snapshot capture before each tool call (for rollback)
     - Call history for undo and audit
+    - Thread-safe tool execution (lock serializes concurrent subagent calls)
     - Session serialization
     """
 
-    def __init__(self) -> None:
+    def __init__(self, snapshot_manager: SnapshotManager | None = None) -> None:
         self._registry = ToolRegistry()
         self._state = SessionState()
         self._history: list[ToolCall] = []
         self._project_path: Path | None = None
+        self._snapshot_manager = snapshot_manager
+        self._lock = threading.Lock()
         self._load_all_tools()
 
     def _load_all_tools(self) -> None:
@@ -101,23 +110,52 @@ class EditingSession:
         """Get full parameter schema for a tool."""
         return self._registry.get_tool_schema(tool_name)
 
+    @property
+    def snapshot_manager(self) -> SnapshotManager | None:
+        return self._snapshot_manager
+
     def call_tool(self, tool_name: str, params: dict) -> Any:
-        """Execute a tool with state tracking and history recording."""
-        provisions = self._registry.get_tool_provisions(tool_name)
+        """Execute a tool with state tracking, snapshots, and history recording.
 
-        result = self._registry.call_tool(tool_name, params, self._state)
+        Thread-safe: serialized via lock for concurrent subagent safety.
+        If a snapshot manager is configured and a project is loaded, captures
+        a snapshot before execution. On failure, auto-restores the latest snapshot.
+        """
+        with self._lock:
+            provisions = self._registry.get_tool_provisions(tool_name)
 
-        self._history.append(
-            ToolCall(
-                tool_name=tool_name,
-                params=params,
-                result=result,
-                timestamp=time.time(),
-                provisions=provisions,
+            # Capture snapshot before execution
+            if self._project_path and self._snapshot_manager:
+                self._snapshot_manager.capture(
+                    self._project_path,
+                    label=f"before {tool_name}",
+                    provisions=self._state.provisions,
+                    tool_name=tool_name,
+                )
+
+            try:
+                result = self._registry.call_tool(tool_name, params, self._state)
+            except Exception:
+                # Auto-restore on failure
+                if self._project_path and self._snapshot_manager:
+                    restored = self._snapshot_manager.restore_latest(self._project_path)
+                    if restored:
+                        _, snap_provisions = restored
+                        self._state.reset()
+                        self._state.add(*snap_provisions)
+                raise
+
+            self._history.append(
+                ToolCall(
+                    tool_name=tool_name,
+                    params=params,
+                    result=result,
+                    timestamp=time.time(),
+                    provisions=provisions,
+                )
             )
-        )
 
-        return result
+            return result
 
     def undo_last(self) -> ToolCall | None:
         """Remove last tool call from history. Returns the removed call.

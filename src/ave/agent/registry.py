@@ -154,8 +154,14 @@ class ToolRegistry:
         requires: list[str] | None = None,
         provides: list[str] | None = None,
         tags: list[str] | None = None,
+        modifies_timeline: bool = False,
     ) -> Callable:
-        """Decorator to register a tool function."""
+        """Decorator to register a tool function.
+
+        Args:
+            modifies_timeline: If True, this tool modifies the GES timeline
+                and should trigger end-of-turn verification.
+        """
         req = requires or []
         prov = provides or []
         tag_list = tags or []
@@ -170,6 +176,7 @@ class ToolRegistry:
                 "requires": req,
                 "provides": prov,
                 "tags": tag_list,
+                "modifies_timeline": modifies_timeline,
             }
             self._dep_graph.add_tool(name, requires=req, provides=prov)
             return func
@@ -268,6 +275,13 @@ class ToolRegistry:
         if info is None:
             raise RegistryError(f"Tool not found: {tool_name}")
         return list(info["provides"])
+
+    def tool_modifies_timeline(self, tool_name: str) -> bool:
+        """Check if a tool modifies the timeline (for verification gating)."""
+        info = self._tools.get(tool_name)
+        if info is None:
+            raise RegistryError(f"Tool not found: {tool_name}")
+        return info.get("modifies_timeline", False)
 
     @property
     def tool_count(self) -> int:

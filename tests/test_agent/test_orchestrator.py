@@ -21,6 +21,8 @@ def session() -> EditingSession:
     s._state = SessionState()
     s._history = []
     s._project_path = None
+    s._snapshot_manager = None
+    s._lock = __import__("threading").Lock()
 
     @s._registry.tool(domain="math", requires=[], provides=["computed"])
     def add(a: int, b: int) -> int:

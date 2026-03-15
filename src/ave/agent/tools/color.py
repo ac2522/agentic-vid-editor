@@ -15,6 +15,7 @@ def register_color_tools(registry: ToolRegistry) -> None:
         tags=["colour", "lift gamma gain", "color correction", "tint", "warm",
               "cool", "look", "mood", "cinematic", "brighten", "darken",
               "brighter", "darker", "warm up", "cool down", "color balance"],
+        modifies_timeline=True,
     )
     def color_grade(
         lift_r: float,
@@ -48,6 +49,7 @@ def register_color_tools(registry: ToolRegistry) -> None:
         provides=["cdl_applied"],
         tags=["ASC CDL", "slope offset power", "color decision list",
               "primary correction", "printer lights", "colour correction"],
+        modifies_timeline=True,
     )
     def cdl(
         slope_r: float,

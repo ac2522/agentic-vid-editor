@@ -14,6 +14,7 @@ def register_motion_graphics_tools(registry: ToolRegistry) -> None:
         provides=["text_overlay_added"],
         tags=["text on screen", "subtitle", "caption", "annotation", "label",
               "watermark", "burn in text", "add words"],
+        modifies_timeline=True,
     )
     def add_text_overlay(
         text: str,
@@ -45,6 +46,7 @@ def register_motion_graphics_tools(registry: ToolRegistry) -> None:
         provides=["lower_third_added"],
         tags=["name tag", "speaker name", "chyron", "name super", "name plate",
               "identify speaker", "name graphic"],
+        modifies_timeline=True,
     )
     def add_lower_third(
         name: str,
@@ -72,6 +74,7 @@ def register_motion_graphics_tools(registry: ToolRegistry) -> None:
         provides=["title_card_added"],
         tags=["title screen", "intro title", "opening title", "chapter title",
               "title slide", "full screen text"],
+        modifies_timeline=True,
     )
     def add_title_card(
         text: str,
