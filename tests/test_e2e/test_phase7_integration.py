@@ -34,6 +34,7 @@ def _make_session(snapshot_mgr: SnapshotManager | None = None) -> EditingSession
     s._history = []
     s._project_path = None
     s._snapshot_manager = snapshot_mgr
+    s._transition_graph = None
     s._lock = threading.Lock()
 
     @s._registry.tool(domain="editing", requires=[], provides=["clip_trimmed"],
@@ -358,6 +359,29 @@ class TestTransitionGraphRecording:
         suggestions = graph.suggest_next("trim")
         assert len(suggestions) > 0
         assert suggestions[0][0] == "color_grade"
+
+    def test_session_auto_records_transitions(self):
+        """Session automatically records transitions when a graph is provided."""
+        from ave.agent.transitions import ToolTransitionGraph
+
+        graph = ToolTransitionGraph()
+        session = _make_session()
+        session._transition_graph = graph
+
+        session.call_tool("probe_media", {"path": "/test.mp4"})
+        session.call_tool("trim", {"in_ns": 0, "out_ns": 1_000_000_000})
+        session.call_tool("volume", {"level_db": -6.0})
+
+        assert graph.get_transition_count("probe_media", "trim") == 1
+        assert graph.get_transition_count("trim", "volume") == 1
+
+    def test_session_without_graph_still_works(self):
+        """Session works fine without a transition graph (backwards compatible)."""
+        session = _make_session()
+        # No _transition_graph set — should not crash
+        session.call_tool("probe_media", {"path": "/test.mp4"})
+        session.call_tool("trim", {"in_ns": 0, "out_ns": 1_000_000_000})
+        assert len(session.history) == 2
 
     def test_transition_graph_json_round_trip(self):
         from ave.agent.transitions import ToolTransitionGraph

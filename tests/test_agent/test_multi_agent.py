@@ -34,6 +34,7 @@ def session() -> EditingSession:
     s._history = []
     s._project_path = None
     s._snapshot_manager = None
+    s._transition_graph = None
     s._lock = threading.Lock()
 
     @s._registry.tool(domain="editing", requires=[], provides=["clip_trimmed"])

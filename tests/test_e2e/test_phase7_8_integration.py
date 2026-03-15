@@ -86,6 +86,7 @@ def _make_test_session() -> EditingSession:
     s._history = []
     s._project_path = None
     s._snapshot_manager = None
+    s._transition_graph = None
     s._lock = threading.Lock()
 
     @s._registry.tool(domain="editing", requires=[], provides=["clip_trimmed"],
@@ -99,6 +100,12 @@ def _make_test_session() -> EditingSession:
     def color_grade(warmth: float) -> dict:
         """Apply color grading."""
         return {"warmth": warmth}
+
+    @s._registry.tool(domain="audio", requires=[], provides=["volume_set"],
+                       modifies_timeline=True)
+    def volume(level_db: float) -> dict:
+        """Set audio volume."""
+        return {"level_db": level_db}
 
     @s._registry.tool(domain="transcription", requires=[], provides=[])
     def search_transcript(query: str) -> dict:
@@ -290,9 +297,27 @@ class TestChatSessionOrchestrator:
         orchestrator, model = chat_setup
         cs = ChatSession(orchestrator, model)
 
-        # Note: ChatSession checks against a hardcoded domain set
-        # color is NOT in the hardcoded set (editing, compositing, motion_graphics, scene)
-        assert cs._is_timeline_modifying("call_tool", {"tool_name": "color_grade"}) is False
+        # color_grade has modifies_timeline=True — should be detected
+        assert cs._is_timeline_modifying("call_tool", {"tool_name": "color_grade"}) is True
+
+    def test_is_timeline_modifying_audio_domain(self, chat_setup):
+        from ave.web.chat import ChatSession
+
+        orchestrator, model = chat_setup
+        cs = ChatSession(orchestrator, model)
+
+        # Audio tools also have modifies_timeline=True
+        assert cs._is_timeline_modifying("call_tool", {"tool_name": "volume"}) is True
+
+    def test_is_timeline_modifying_read_only_tool(self, chat_setup):
+        from ave.web.chat import ChatSession
+
+        orchestrator, model = chat_setup
+        cs = ChatSession(orchestrator, model)
+
+        # Read-only tools should NOT be timeline-modifying
+        assert cs._is_timeline_modifying("call_tool", {"tool_name": "search_transcript"}) is False
+        assert cs._is_timeline_modifying("call_tool", {"tool_name": "render_proxy"}) is False
 
     def test_is_timeline_modifying_non_call_tool(self, chat_setup):
         from ave.web.chat import ChatSession

@@ -202,13 +202,16 @@ class ChatSession:
         ]
 
     def _is_timeline_modifying(self, tool_name: str, tool_input: dict) -> bool:
-        """Check if a tool call modifies the timeline."""
+        """Check if a tool call modifies the timeline.
+
+        Uses the modifies_timeline flag from the tool registry rather than
+        a hardcoded domain set, so all tools flagged with
+        modifies_timeline=True are correctly detected.
+        """
         if tool_name != "call_tool":
             return False
         inner = tool_input.get("tool_name", "")
-        modifying_domains = {"editing", "compositing", "motion_graphics", "scene"}
         try:
-            schema = self._orchestrator.session.registry.get_tool_schema(inner)
-            return schema.domain in modifying_domains
+            return self._orchestrator.session.registry.tool_modifies_timeline(inner)
         except Exception:
             return False

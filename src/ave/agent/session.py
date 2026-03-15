@@ -17,6 +17,7 @@ from typing import Any
 
 from ave.agent.registry import ToolRegistry, PrerequisiteError
 from ave.agent.dependencies import SessionState
+from ave.agent.transitions import ToolTransitionGraph
 from ave.project.snapshots import SnapshotManager
 
 
@@ -47,12 +48,17 @@ class EditingSession:
     - Session serialization
     """
 
-    def __init__(self, snapshot_manager: SnapshotManager | None = None) -> None:
+    def __init__(
+        self,
+        snapshot_manager: SnapshotManager | None = None,
+        transition_graph: ToolTransitionGraph | None = None,
+    ) -> None:
         self._registry = ToolRegistry()
         self._state = SessionState()
         self._history: list[ToolCall] = []
         self._project_path: Path | None = None
         self._snapshot_manager = snapshot_manager
+        self._transition_graph = transition_graph
         self._lock = threading.Lock()
         self._load_all_tools()
 
@@ -144,6 +150,11 @@ class EditingSession:
                         self._state.reset()
                         self._state.add(*snap_provisions)
                 raise
+
+            # Record transition from previous tool
+            if self._transition_graph and self._history:
+                prev_tool = self._history[-1].tool_name
+                self._transition_graph.record(prev_tool, tool_name)
 
             self._history.append(
                 ToolCall(
