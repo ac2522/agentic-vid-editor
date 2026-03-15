@@ -578,3 +578,66 @@ class TestEffectStateReconstruction:
         # Both effects must be in the tracking list
         effects = tl2._effects.get(clip_id, [])
         assert len(effects) == 2
+
+
+# --- Auto-transitions ---
+
+
+@requires_ges
+@requires_ffmpeg
+class TestTimelineAutoTransitions:
+    @pytest.fixture(autouse=True)
+    def _setup(self, fixtures_dir: Path, tmp_project: Path):
+        self.clip_path = fixtures_dir / "av_clip_1080p24.mp4"
+        if not self.clip_path.exists():
+            from tests.fixtures.generate import generate_av_clip
+
+            generate_av_clip(self.clip_path)
+        self.project = tmp_project
+
+    def test_enable_auto_transitions(self):
+        from ave.project.timeline import Timeline
+
+        tl = Timeline.create(self.project / "project.xges", fps=24.0)
+        tl.enable_auto_transitions(True)
+
+        # Add two overlapping clips — GES should auto-create transition
+        tl.add_clip(
+            media_path=self.clip_path,
+            layer=0,
+            start_ns=0,
+            duration_ns=3_000_000_000,
+        )
+        tl.add_clip(
+            media_path=self.clip_path,
+            layer=0,
+            start_ns=2_000_000_000,
+            duration_ns=3_000_000_000,
+        )
+
+        # Total duration: 3s + 3s - 1s overlap = 5s
+        assert tl.duration_ns == 5_000_000_000
+
+    def test_auto_transitions_persist_after_save_load(self):
+        from ave.project.timeline import Timeline
+
+        tl = Timeline.create(self.project / "project.xges", fps=24.0)
+        tl.enable_auto_transitions(True)
+
+        tl.add_clip(
+            media_path=self.clip_path,
+            layer=0,
+            start_ns=0,
+            duration_ns=3_000_000_000,
+        )
+        tl.add_clip(
+            media_path=self.clip_path,
+            layer=0,
+            start_ns=2_000_000_000,
+            duration_ns=3_000_000_000,
+        )
+
+        tl.save()
+
+        loaded = Timeline.load(self.project / "project.xges")
+        assert loaded.duration_ns == 5_000_000_000

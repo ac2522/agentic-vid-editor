@@ -274,3 +274,244 @@ class TestOperationsVerification:
                 assert node.module != "gi.repository", (
                     "split_clip must not import from gi.repository"
                 )
+
+
+@requires_ges
+@requires_ffmpeg
+class TestTimelineVolume:
+    @pytest.fixture(autouse=True)
+    def _setup(self, fixtures_dir: Path, tmp_project: Path):
+        self.clip_path = fixtures_dir / "av_clip_1080p24.mp4"
+        if not self.clip_path.exists():
+            from tests.fixtures.generate import generate_av_clip
+
+            generate_av_clip(self.clip_path)
+        self.project = tmp_project
+
+    def test_set_volume(self):
+        from ave.project.timeline import Timeline
+        from ave.project.operations import set_volume
+
+        tl = Timeline.create(self.project / "project.xges", fps=24.0)
+        clip_id = tl.add_clip(
+            media_path=self.clip_path,
+            layer=0,
+            start_ns=0,
+            duration_ns=3_000_000_000,
+        )
+
+        effect_id = set_volume(tl, clip_id, level_db=-6.0)
+
+        actual = tl.get_effect_property(clip_id, effect_id, "volume")
+        assert abs(actual - 0.5012) < 0.01
+
+    def test_set_volume_zero_db(self):
+        from ave.project.timeline import Timeline
+        from ave.project.operations import set_volume
+
+        tl = Timeline.create(self.project / "project.xges", fps=24.0)
+        clip_id = tl.add_clip(
+            media_path=self.clip_path,
+            layer=0,
+            start_ns=0,
+            duration_ns=3_000_000_000,
+        )
+
+        effect_id = set_volume(tl, clip_id, level_db=0.0)
+
+        actual = tl.get_effect_property(clip_id, effect_id, "volume")
+        assert abs(actual - 1.0) < 0.001
+
+
+@requires_ges
+@requires_ffmpeg
+class TestTimelineFade:
+    @pytest.fixture(autouse=True)
+    def _setup(self, fixtures_dir: Path, tmp_project: Path):
+        self.clip_path = fixtures_dir / "av_clip_1080p24.mp4"
+        if not self.clip_path.exists():
+            from tests.fixtures.generate import generate_av_clip
+
+            generate_av_clip(self.clip_path)
+        self.project = tmp_project
+
+    def test_apply_fade_in(self):
+        from ave.project.timeline import Timeline
+        from ave.project.operations import apply_fade
+
+        tl = Timeline.create(self.project / "project.xges", fps=24.0)
+        clip_id = tl.add_clip(
+            media_path=self.clip_path,
+            layer=0,
+            start_ns=0,
+            duration_ns=5_000_000_000,
+        )
+
+        effect_id = apply_fade(tl, clip_id, fade_in_ns=1_000_000_000, fade_out_ns=0)
+
+        assert effect_id is not None
+        # Volume effect should exist
+        actual = tl.get_effect_property(clip_id, effect_id, "volume")
+        assert actual is not None
+
+    def test_apply_fade_both(self):
+        from ave.project.timeline import Timeline
+        from ave.project.operations import apply_fade
+
+        tl = Timeline.create(self.project / "project.xges", fps=24.0)
+        clip_id = tl.add_clip(
+            media_path=self.clip_path,
+            layer=0,
+            start_ns=0,
+            duration_ns=5_000_000_000,
+        )
+
+        effect_id = apply_fade(
+            tl, clip_id, fade_in_ns=1_000_000_000, fade_out_ns=1_000_000_000
+        )
+
+        assert effect_id is not None
+
+    def test_apply_fade_out_only(self):
+        from ave.project.timeline import Timeline
+        from ave.project.operations import apply_fade
+
+        tl = Timeline.create(self.project / "project.xges", fps=24.0)
+        clip_id = tl.add_clip(
+            media_path=self.clip_path,
+            layer=0,
+            start_ns=0,
+            duration_ns=5_000_000_000,
+        )
+
+        effect_id = apply_fade(tl, clip_id, fade_in_ns=0, fade_out_ns=2_000_000_000)
+
+        assert effect_id is not None
+
+
+@requires_ges
+@requires_ffmpeg
+class TestTimelineTransition:
+    @pytest.fixture(autouse=True)
+    def _setup(self, fixtures_dir: Path, tmp_project: Path):
+        self.clip_path = fixtures_dir / "av_clip_1080p24.mp4"
+        if not self.clip_path.exists():
+            from tests.fixtures.generate import generate_av_clip
+
+            generate_av_clip(self.clip_path)
+        self.project = tmp_project
+
+    def test_apply_crossfade(self):
+        from ave.project.timeline import Timeline
+        from ave.project.operations import apply_transition, concatenate_clips
+        from ave.tools.transitions import TransitionType
+
+        tl = Timeline.create(self.project / "project.xges", fps=24.0)
+
+        clip_ids = concatenate_clips(
+            tl,
+            media_paths=[self.clip_path, self.clip_path],
+            durations_ns=[3_000_000_000, 3_000_000_000],
+            layer=0,
+        )
+
+        apply_transition(
+            tl,
+            clip_ids[0],
+            clip_ids[1],
+            transition_type=TransitionType.CROSSFADE,
+            duration_ns=1_000_000_000,
+        )
+
+        # 3s + 3s - 1s overlap = 5s
+        assert tl.duration_ns == 5_000_000_000
+
+    def test_apply_transition_preserves_clips(self):
+        from ave.project.timeline import Timeline
+        from ave.project.operations import apply_transition, concatenate_clips
+        from ave.tools.transitions import TransitionType
+
+        tl = Timeline.create(self.project / "project.xges", fps=24.0)
+
+        clip_ids = concatenate_clips(
+            tl,
+            media_paths=[self.clip_path, self.clip_path],
+            durations_ns=[3_000_000_000, 3_000_000_000],
+            layer=0,
+        )
+
+        apply_transition(
+            tl,
+            clip_ids[0],
+            clip_ids[1],
+            transition_type=TransitionType.CROSSFADE,
+            duration_ns=1_000_000_000,
+        )
+
+        # Both source clips should still be accessible
+        assert tl.get_clip(clip_ids[0]) is not None
+        assert tl.get_clip(clip_ids[1]) is not None
+
+
+@requires_ges
+@requires_ffmpeg
+class TestTimelineSpeed:
+    @pytest.fixture(autouse=True)
+    def _setup(self, fixtures_dir: Path, tmp_project: Path):
+        self.clip_path = fixtures_dir / "av_clip_1080p24.mp4"
+        if not self.clip_path.exists():
+            from tests.fixtures.generate import generate_av_clip
+
+            generate_av_clip(self.clip_path)
+        self.project = tmp_project
+
+    def test_set_speed_double(self):
+        from ave.project.timeline import Timeline
+        from ave.project.operations import set_speed
+
+        tl = Timeline.create(self.project / "project.xges", fps=24.0)
+        clip_id = tl.add_clip(
+            media_path=self.clip_path,
+            layer=0,
+            start_ns=0,
+            duration_ns=4_000_000_000,
+        )
+
+        set_speed(tl, clip_id, rate=2.0)
+
+        clip = tl.get_clip(clip_id)
+        assert clip.get_duration() == 2_000_000_000
+
+    def test_set_speed_half(self):
+        from ave.project.timeline import Timeline
+        from ave.project.operations import set_speed
+
+        tl = Timeline.create(self.project / "project.xges", fps=24.0)
+        clip_id = tl.add_clip(
+            media_path=self.clip_path,
+            layer=0,
+            start_ns=0,
+            duration_ns=2_000_000_000,
+        )
+
+        set_speed(tl, clip_id, rate=0.5)
+
+        clip = tl.get_clip(clip_id)
+        assert clip.get_duration() == 4_000_000_000
+
+    def test_set_speed_preserves_position(self):
+        from ave.project.timeline import Timeline
+        from ave.project.operations import set_speed
+
+        tl = Timeline.create(self.project / "project.xges", fps=24.0)
+        clip_id = tl.add_clip(
+            media_path=self.clip_path,
+            layer=0,
+            start_ns=1_000_000_000,
+            duration_ns=4_000_000_000,
+        )
+
+        set_speed(tl, clip_id, rate=2.0)
+
+        clip = tl.get_clip(clip_id)
+        assert clip.get_start() == 1_000_000_000
