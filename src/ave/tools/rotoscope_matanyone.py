@@ -14,7 +14,10 @@ from __future__ import annotations
 
 from typing import Iterator
 
-import numpy as np
+try:
+    import numpy as np
+except ImportError:
+    np = None  # type: ignore[assignment]
 
 from ave.tools.rotoscope import (
     MaskCorrection,

@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-import numpy as np
+np = __import__("pytest").importorskip("numpy")
 
-from ave.tools.rotoscope_chroma import ChromaKeyBackend
-from ave.tools.rotoscope import SegmentPrompt
+from ave.tools.rotoscope_chroma import ChromaKeyBackend  # noqa: E402
+from ave.tools.rotoscope import SegmentPrompt  # noqa: E402
 
 
 class TestChromaKeyBackend:

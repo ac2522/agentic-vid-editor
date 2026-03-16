@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-import numpy as np
+np = __import__("pytest").importorskip("numpy")
 
-from ave.tools.rotoscope import SegmentPrompt, MaskCorrection
-from ave.tools.rotoscope_sam2 import SamBackend
-from ave.tools.rotoscope_chroma import ChromaKeyBackend
-from ave.tools.mask_eval import MaskEvaluator
+from ave.tools.rotoscope import SegmentPrompt, MaskCorrection  # noqa: E402
+from ave.tools.rotoscope_sam2 import SamBackend  # noqa: E402
+from ave.tools.rotoscope_chroma import ChromaKeyBackend  # noqa: E402
+from ave.tools.mask_eval import MaskEvaluator  # noqa: E402
 
 
 class TestFeedbackLoop:

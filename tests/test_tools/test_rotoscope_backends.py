@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-import numpy as np
+np = __import__("pytest").importorskip("numpy")
 
-from ave.tools.rotoscope import SegmentPrompt, RotoscopeBackend
+from ave.tools.rotoscope import SegmentPrompt, RotoscopeBackend  # noqa: E402
 
 
 class TestSamBackendProtocol:
