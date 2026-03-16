@@ -96,6 +96,8 @@ class EditingSession:
         from ave.agent.tools.scene import register_scene_tools
         from ave.agent.tools.interchange import register_interchange_tools
         from ave.agent.tools.download import register_download_tools
+        from ave.agent.tools.research import register_research_tools
+        from ave.agent.tools.vfx import register_vfx_tools
 
         register_editing_tools(self._registry)
         register_audio_tools(self._registry)
@@ -108,6 +110,8 @@ class EditingSession:
         register_scene_tools(self._registry)
         register_interchange_tools(self._registry)
         register_download_tools(self._registry)
+        register_research_tools(self._registry)
+        register_vfx_tools(self._registry)
 
     def load_project(self, xges_path: Path) -> None:
         """Load a project file. Sets timeline_loaded state."""

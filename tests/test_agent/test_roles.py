@@ -57,11 +57,14 @@ def test_role_names_are_unique():
 # -- test ALL_ROLES contains all 4 roles --------------------------------------
 
 
-def test_all_roles_contains_four():
-    """ALL_ROLES tuple has exactly 4 predefined roles."""
-    assert len(ALL_ROLES) == 4
+def test_all_roles_contains_six():
+    """ALL_ROLES tuple has all 6 predefined roles."""
+    assert len(ALL_ROLES) == 6
     names = {r.name for r in ALL_ROLES}
-    assert names == {"editor", "colorist", "sound_designer", "transcriptionist"}
+    assert names == {
+        "editor", "colorist", "sound_designer", "transcriptionist",
+        "Researcher", "VFX Artist",
+    }
 
 
 # -- test system prompts mention nanosecond conventions ------------------------

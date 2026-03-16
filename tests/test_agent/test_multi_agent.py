@@ -85,9 +85,9 @@ def multi_orch(session: EditingSession) -> MultiAgentOrchestrator:
 
 
 def test_creates_with_default_roles(multi_orch: MultiAgentOrchestrator):
-    """MultiAgentOrchestrator initializes with all 4 default roles."""
+    """MultiAgentOrchestrator initializes with all default roles."""
     assert multi_orch.roles == ALL_ROLES
-    assert len(multi_orch.roles) == 4
+    assert len(multi_orch.roles) == 6
 
 
 # -- test MultiAgentOrchestrator creation with custom roles --------------------
@@ -125,7 +125,7 @@ def test_get_agent_definitions_keys(multi_orch: MultiAgentOrchestrator):
     """get_agent_definitions returns dict with description and prompt for each role."""
     defs = multi_orch.get_agent_definitions()
     assert isinstance(defs, dict)
-    assert len(defs) == 4
+    assert len(defs) == 6
 
     for role_name, defn in defs.items():
         assert "description" in defn, f"Missing 'description' for {role_name}"
@@ -243,7 +243,7 @@ def test_create_ave_agent_options(session: EditingSession):
     assert "system_prompt" in opts
     assert "allowed_tools" in opts
     assert isinstance(opts["agents"], list)
-    assert len(opts["agents"]) == 4  # one per default role
+    assert len(opts["agents"]) == 6  # one per default role
 
 
 def test_create_ave_agent_options_custom_roles(session: EditingSession):
