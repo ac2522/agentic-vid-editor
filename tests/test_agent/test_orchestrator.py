@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 from ave.agent.session import EditingSession
-from ave.agent.registry import ToolRegistry, RegistryError
+from ave.agent.registry import ToolRegistry
 from ave.agent.dependencies import SessionState
 from ave.agent.orchestrator import Orchestrator, MetaToolDef
 

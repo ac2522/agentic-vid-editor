@@ -1,7 +1,7 @@
 """Tests for compositing GES operations layer."""
 
 import pytest
-from unittest.mock import MagicMock, call
+from unittest.mock import MagicMock
 
 
 class TestApplyBlendMode:

@@ -11,7 +11,6 @@ from ave.agent.dependencies import SessionState
 from ave.agent.session import EditingSession
 from ave.agent.orchestrator import Orchestrator
 from ave.agent.roles import (
-    AgentRole,
     ALL_ROLES,
     EDITOR_ROLE,
     COLORIST_ROLE,

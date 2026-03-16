@@ -6,7 +6,6 @@ import pytest
 from pydantic import BaseModel
 
 from ave.agent.registry import (
-    ParamInfo,
     PrerequisiteError,
     RegistryError,
     ToolRegistry,

@@ -17,8 +17,8 @@ from pathlib import Path
 import pytest
 
 from ave.agent.dependencies import SessionState
-from ave.agent.registry import ToolRegistry, PrerequisiteError
-from ave.agent.session import EditingSession, ToolCall
+from ave.agent.registry import ToolRegistry
+from ave.agent.session import EditingSession
 from ave.project.snapshots import SnapshotManager
 
 
@@ -129,7 +129,7 @@ class TestSessionSnapshotIntegration:
         session = session_with_snapshots
         session.call_tool("volume", {"level_db": -3.0})
 
-        snap = session.snapshot_manager.list_snapshots()[0]
+        session.snapshot_manager.list_snapshots()[0]
         # The snapshot was taken BEFORE volume, so it should have
         # only timeline_loaded (not volume_set)
         # We need to check the actual snapshot object

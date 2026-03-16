@@ -34,7 +34,7 @@ class OTIOExportError(Exception):
 # ---------------------------------------------------------------------------
 
 
-def ns_to_rational_time(ns: int, fps: float = 24.0) -> "otio.opentime.RationalTime":  # type: ignore[name-defined]
+def ns_to_rational_time(ns: int, fps: float = 24.0) -> "otio.opentime.RationalTime":  # type: ignore[name-defined]  # noqa: F821
     """Convert nanoseconds to OTIO RationalTime.
 
     The value is expressed as a frame count at the given *fps* rate so that
@@ -51,7 +51,7 @@ def ns_range_to_time_range(
     start_ns: int,
     duration_ns: int,
     fps: float = 24.0,
-) -> "otio.opentime.TimeRange":  # type: ignore[name-defined]
+) -> "otio.opentime.TimeRange":  # type: ignore[name-defined]  # noqa: F821
     """Convert nanosecond start + duration to an OTIO TimeRange."""
     import opentimelineio as otio  # lazy import
 
@@ -65,7 +65,7 @@ def ns_range_to_time_range(
 # ---------------------------------------------------------------------------
 
 
-def clip_to_otio(clip_data: dict, fps: float = 24.0) -> "otio.schema.Clip":  # type: ignore[name-defined]
+def clip_to_otio(clip_data: dict, fps: float = 24.0) -> "otio.schema.Clip":  # type: ignore[name-defined]  # noqa: F821
     """Convert an AVE clip dict to an OTIO Clip.
 
     Expected *clip_data* keys:
@@ -75,7 +75,7 @@ def clip_to_otio(clip_data: dict, fps: float = 24.0) -> "otio.schema.Clip":  # t
 
     name = clip_data.get("name", "unnamed")
     source_path = clip_data.get("source_path", "")
-    start_ns: int = clip_data["start_ns"]
+    clip_data["start_ns"]
     duration_ns: int = clip_data["duration_ns"]
     in_point_ns: int = clip_data.get("in_point_ns", 0)
 
@@ -103,7 +103,7 @@ def layer_to_otio_track(
     layer_index: int,
     clips: list[dict],
     fps: float = 24.0,
-) -> "otio.schema.Track":  # type: ignore[name-defined]
+) -> "otio.schema.Track":  # type: ignore[name-defined]  # noqa: F821
     """Convert a GES layer's clips to an OTIO Track.
 
     Clips are sorted by ``start_ns`` and gaps between them are filled with

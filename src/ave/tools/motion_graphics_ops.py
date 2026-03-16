@@ -203,7 +203,7 @@ def apply_title_card(
 
     gi.require_version("GES", "1.0")
     gi.require_version("Gst", "1.0")
-    from gi.repository import GES, Gst  # noqa: F811
+    from gi.repository import GES  # noqa: F811
 
     title_clip = GES.TitleClip.new()
     if title_clip is None:

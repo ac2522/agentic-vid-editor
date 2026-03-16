@@ -6,7 +6,6 @@ from __future__ import annotations
 import pytest_asyncio  # noqa: F401
 
 import base64
-import json
 from pathlib import Path
 from unittest.mock import patch
 
@@ -14,9 +13,9 @@ import pytest
 
 aiohttp = pytest.importorskip("aiohttp")
 
-from aiohttp import web
+from aiohttp import web  # noqa: E402
 
-from ave.preview.cache import SegmentCache
+from ave.preview.cache import SegmentCache  # noqa: E402
 
 
 # ---------------------------------------------------------------------------

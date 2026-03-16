@@ -1,6 +1,5 @@
 """Tests for proxy-first workflow."""
 
-from pathlib import Path
 
 import pytest
 

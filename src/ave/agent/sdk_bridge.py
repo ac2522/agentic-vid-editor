@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from ave.agent.session import EditingSession
 from ave.agent.multi_agent import MultiAgentOrchestrator
-from ave.agent.roles import AgentRole, ALL_ROLES
+from ave.agent.roles import AgentRole
 
 
 def role_to_agent_definition(

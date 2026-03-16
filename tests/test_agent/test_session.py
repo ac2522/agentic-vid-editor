@@ -4,11 +4,10 @@ from __future__ import annotations
 
 import time
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 
-from ave.agent.session import EditingSession, SessionError, ToolCall
+from ave.agent.session import EditingSession, SessionError
 from ave.agent.registry import PrerequisiteError, ToolRegistry
 from ave.agent.dependencies import SessionState
 

@@ -5,7 +5,6 @@ from __future__ import annotations
 import pytest
 
 from ave.tools.rough_cut import (
-    ClipPlacement,
     RoughCutError,
     RoughCutParams,
     compute_rough_cut,

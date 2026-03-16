@@ -18,20 +18,20 @@ class OTIOImportError(Exception):
     """Raised when OTIO import fails."""
 
 
-def rational_time_to_ns(rt: "otio.opentime.RationalTime") -> int:
+def rational_time_to_ns(rt: "otio.opentime.RationalTime") -> int:  # noqa: F821
     """Convert OTIO RationalTime to nanoseconds."""
     seconds = rt.value / rt.rate
     return round(seconds * _NS_PER_SECOND)
 
 
-def time_range_to_ns(tr: "otio.opentime.TimeRange") -> tuple[int, int]:
+def time_range_to_ns(tr: "otio.opentime.TimeRange") -> tuple[int, int]:  # noqa: F821
     """Convert OTIO TimeRange to (start_ns, duration_ns)."""
     start_ns = rational_time_to_ns(tr.start_time)
     duration_ns = rational_time_to_ns(tr.duration)
     return start_ns, duration_ns
 
 
-def otio_clip_to_dict(clip: "otio.schema.Clip") -> dict:
+def otio_clip_to_dict(clip: "otio.schema.Clip") -> dict:  # noqa: F821
     """Convert OTIO Clip to AVE clip dict.
 
     Returns:
@@ -76,7 +76,7 @@ def otio_clip_to_dict(clip: "otio.schema.Clip") -> dict:
 
 
 def otio_track_to_layer(
-    track: "otio.schema.Track", layer_index: int
+    track: "otio.schema.Track", layer_index: int  # noqa: F821
 ) -> tuple[dict, list[str]]:
     """Convert OTIO Track to AVE layer dict.
 

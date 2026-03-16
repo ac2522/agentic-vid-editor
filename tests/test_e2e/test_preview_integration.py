@@ -7,12 +7,11 @@ coherently together end-to-end.
 from __future__ import annotations
 
 import base64
-import json
 from pathlib import Path
 
 import pytest
 
-from ave.preview.cache import CacheError, SegmentCache, SegmentState
+from ave.preview.cache import SegmentCache, SegmentState
 from ave.preview.frame import compute_frame_timecode, extract_frame
 from ave.render.segment import (
     SegmentBoundary,
@@ -291,7 +290,7 @@ class TestServerIntegration:
     async def test_server_with_real_cache(self, tmp_path: Path) -> None:
         """Create real SegmentCache with registered segments, create app,
         GET /api/status, verify counts match cache."""
-        from aiohttp.test_utils import AioHTTPTestCase, TestClient, TestServer
+        from aiohttp.test_utils import TestClient, TestServer
 
         from ave.preview.server import PreviewServer
 

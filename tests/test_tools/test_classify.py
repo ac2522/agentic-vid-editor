@@ -15,7 +15,7 @@ from ave.tools.classify import (
     load_keyframe_as_array,
 )
 from ave.tools.scene import SceneBoundary
-from ave.tools.vision import FrameEmbedding, SceneTag, VisualAnalysis
+from ave.tools.vision import SceneTag, VisualAnalysis
 
 
 # ---------------------------------------------------------------------------

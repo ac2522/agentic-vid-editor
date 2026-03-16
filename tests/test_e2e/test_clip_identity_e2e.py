@@ -11,15 +11,11 @@ Tests the complete meta-tool chain that an LLM would follow:
 
 from __future__ import annotations
 
-import threading
-from pathlib import Path
 
 import pytest
 
 from ave.agent.orchestrator import Orchestrator
 from ave.agent.session import EditingSession
-from ave.agent.dependencies import SessionState
-from ave.agent.registry import ToolRegistry
 from ave.project.snapshots import SnapshotManager
 
 

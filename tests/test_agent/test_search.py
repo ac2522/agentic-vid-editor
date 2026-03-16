@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
 
 from ave.agent.registry import ToolRegistry
 from ave.agent.search import SearchHit, ToolSearchEngine

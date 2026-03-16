@@ -13,10 +13,8 @@ from typing import TYPE_CHECKING
 
 from ave.tools.compositing import (
     BlendMode,
-    BlendShaderInfo,
     CompositingError,
     compute_blend_info,
-    compute_blend_params,
     compute_layer_params,
 )
 

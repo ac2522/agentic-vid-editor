@@ -24,7 +24,7 @@ from ave.agent.orchestrator import Orchestrator
 from ave.agent.registry import ToolRegistry
 from ave.agent.session import EditingSession
 from ave.project.snapshots import SnapshotManager
-from ave.web.timeline_model import TimelineModel, ClipState
+from ave.web.timeline_model import TimelineModel
 
 
 # ---------------------------------------------------------------------------

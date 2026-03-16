@@ -11,9 +11,8 @@ import json
 
 import pytest
 
-from ave.agent.dependencies import SessionState
 from ave.agent.orchestrator import Orchestrator
-from ave.agent.registry import PrerequisiteError, ToolRegistry
+from ave.agent.registry import PrerequisiteError
 from ave.agent.session import EditingSession
 
 
@@ -168,7 +167,7 @@ class TestSessionWorkflow:
         session.state.add("clip_exists")
 
         # Call trim
-        result = session.call_tool("trim", {
+        session.call_tool("trim", {
             "clip_duration_ns": 10_000_000_000,
             "in_ns": 1_000_000_000,
             "out_ns": 5_000_000_000,
@@ -650,7 +649,7 @@ class TestSearchToCallFlow:
         """Simulate: agent browses domains -> picks domain -> searches within it."""
         session = EditingSession()
         domains = session.registry.list_domains()
-        domain_names = [d["domain"] for d in domains]
+        [d["domain"] for d in domains]
         assert len(domains) >= 10
 
         # Browse color domain

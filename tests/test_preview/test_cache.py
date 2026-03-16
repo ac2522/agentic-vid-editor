@@ -1,11 +1,10 @@
 """Tests for the segment cache manager."""
 
-import json
 from pathlib import Path
 
 import pytest
 
-from ave.preview.cache import CacheError, CachedSegment, SegmentCache, SegmentState
+from ave.preview.cache import CacheError, SegmentCache, SegmentState
 
 
 class TestSegmentStateEnum:

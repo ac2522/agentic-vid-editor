@@ -46,7 +46,6 @@ def register_scene_tools(registry: ToolRegistry) -> None:
         output_dir: str,
     ):
         """Classify detected scenes into shot types (wide, close-up, etc.)."""
-        from pathlib import Path
 
         return {
             "video_path": video_path,

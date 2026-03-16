@@ -98,7 +98,7 @@ def extract_frame(
         cmd.extend(fmt_args)
         cmd.append(str(dest))
 
-        result = subprocess.run(
+        subprocess.run(
             cmd,
             capture_output=True,
             check=True,

@@ -84,7 +84,7 @@ class CompositorStrategy:
         for strategy in PREFERENCE_ORDER:
             if strategy in available:
                 reason = (
-                    f"Best available (preference order)"
+                    "Best available (preference order)"
                     if preference == "auto"
                     else f"Fallback from unavailable {preference!r}"
                 )

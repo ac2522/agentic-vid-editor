@@ -4,7 +4,6 @@ import json
 from pathlib import Path
 from unittest.mock import MagicMock
 
-import pytest
 
 from ave.web.api import get_assets_response, get_timeline_response
 

@@ -5,12 +5,11 @@ from __future__ import annotations
 import subprocess
 import threading
 from pathlib import Path
-from typing import runtime_checkable
 from unittest.mock import MagicMock
 
 import pytest
 
-from ave.tools.verify import EditIntent, VerificationResult, compare_metrics, VerificationBackend
+from ave.tools.verify import EditIntent, VerificationResult, compare_metrics
 from ave.tools.verify_probe import ProbeVerifier
 from ave.agent.verification import VerifiedSession
 from ave.agent.session import EditingSession
