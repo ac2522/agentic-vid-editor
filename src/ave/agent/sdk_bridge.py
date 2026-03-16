@@ -45,10 +45,7 @@ def create_ave_agent_options(
     """
     orch = MultiAgentOrchestrator(session, roles=roles)
 
-    agents = [
-        role_to_agent_definition(role, session, model=model)
-        for role in orch.roles
-    ]
+    agents = [role_to_agent_definition(role, session, model=model) for role in orch.roles]
 
     # Collect all tools across all roles
     all_tools: list[str] = []

@@ -87,10 +87,13 @@ def probe_bit_depth(media_path: Path) -> int:
     result = subprocess.run(
         [
             "ffprobe",
-            "-v", "quiet",
-            "-print_format", "json",
+            "-v",
+            "quiet",
+            "-print_format",
+            "json",
             "-show_streams",
-            "-select_streams", "v:0",
+            "-select_streams",
+            "v:0",
             str(media_path),
         ],
         capture_output=True,
@@ -232,14 +235,16 @@ class TestTenBitPipeline:
         # 1. IDT: camera space -> working space (via ociofilter)
         tl.set_clip_metadata(clip_id, "agent:camera-color-space", "ACES - ACEScg")
         apply_color_transform(
-            tl, clip_id,
+            tl,
+            clip_id,
             src_colorspace="ACES - ACEScg",
             dst_colorspace="ACES - ACEScg",
         )
 
         # 2. Creative grade (via glshader)
         apply_color_grade(
-            tl, clip_id,
+            tl,
+            clip_id,
             lift=(0.02, 0.0, -0.02),
             gamma=(1.0, 1.0, 1.0),
             gain=(1.05, 1.0, 0.95),
@@ -252,7 +257,8 @@ class TestTenBitPipeline:
 
         # 4. ODT: working space -> display space (via ociofilter)
         apply_color_transform(
-            tl, clip_id,
+            tl,
+            clip_id,
             src_colorspace="ACES - ACEScg",
             dst_colorspace="Output - sRGB",
         )
@@ -282,6 +288,7 @@ class TestTenBitPipeline:
         """
         try:
             import gi
+
             gi.require_version("Gst", "1.0")
             from gi.repository import Gst
         except (ImportError, ValueError):
@@ -306,9 +313,7 @@ class TestTenBitPipeline:
         ret = pipeline.set_state(Gst.State.PAUSED)
         if ret == Gst.StateChangeReturn.FAILURE:
             pipeline.set_state(Gst.State.NULL)
-            pytest.skip(
-                "Could not set pipeline to PAUSED — GL context may not be available"
-            )
+            pytest.skip("Could not set pipeline to PAUSED — GL context may not be available")
 
         # Wait for state change to complete
         pipeline.get_state(Gst.CLOCK_TIME_NONE)
@@ -329,11 +334,17 @@ class TestTenBitPipeline:
 
         # These formats support >= 10-bit precision in GL memory
         tenbit_formats = [
-            "RGBA16F", "RGBx16F", "RGB16F",
-            "RGB10_A2", "RGB10A2_LE",
-            "RGBA16_LE", "RGBA16_BE",
-            "Y410", "Y412_LE",
-            "P010_10LE", "P016_LE",
+            "RGBA16F",
+            "RGBx16F",
+            "RGB16F",
+            "RGB10_A2",
+            "RGB10A2_LE",
+            "RGBA16_LE",
+            "RGBA16_BE",
+            "Y410",
+            "Y412_LE",
+            "P010_10LE",
+            "P016_LE",
         ]
 
         has_tenbit = any(fmt in caps_str for fmt in tenbit_formats)

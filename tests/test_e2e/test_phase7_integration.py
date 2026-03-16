@@ -26,6 +26,7 @@ from ave.project.snapshots import SnapshotManager
 # Helpers — bare sessions with test tools (bypass _load_all_tools)
 # ---------------------------------------------------------------------------
 
+
 def _make_session(snapshot_mgr: SnapshotManager | None = None) -> EditingSession:
     """Create a bare session with test tools that can succeed or fail."""
     s = EditingSession.__new__(EditingSession)
@@ -37,22 +38,23 @@ def _make_session(snapshot_mgr: SnapshotManager | None = None) -> EditingSession
     s._transition_graph = None
     s._lock = threading.Lock()
 
-    @s._registry.tool(domain="editing", requires=[], provides=["clip_trimmed"],
-                       modifies_timeline=True)
+    @s._registry.tool(
+        domain="editing", requires=[], provides=["clip_trimmed"], modifies_timeline=True
+    )
     def trim(in_ns: int, out_ns: int) -> dict:
         """Trim a clip to new in/out points."""
         if in_ns >= out_ns:
             raise ValueError("in_ns must be less than out_ns")
         return {"in_ns": in_ns, "out_ns": out_ns, "duration_ns": out_ns - in_ns}
 
-    @s._registry.tool(domain="color", requires=["clip_trimmed"], provides=["color_graded"],
-                       modifies_timeline=True)
+    @s._registry.tool(
+        domain="color", requires=["clip_trimmed"], provides=["color_graded"], modifies_timeline=True
+    )
     def color_grade(warmth: float) -> dict:
         """Apply color grading."""
         return {"warmth": warmth}
 
-    @s._registry.tool(domain="audio", requires=[], provides=["volume_set"],
-                       modifies_timeline=True)
+    @s._registry.tool(domain="audio", requires=[], provides=["volume_set"], modifies_timeline=True)
     def volume(level_db: float) -> dict:
         """Set audio volume."""
         return {"level_db": level_db}
@@ -466,8 +468,12 @@ class TestCompositorAndSchedulerIntegration:
         # Create render jobs
         scheduler = RenderScheduler(max_workers=2)
         jobs = [
-            RenderJob(segment_id=f"seg_{i}", start_ns=i * 2_000_000_000,
-                      stop_ns=(i + 1) * 2_000_000_000, priority=i)
+            RenderJob(
+                segment_id=f"seg_{i}",
+                start_ns=i * 2_000_000_000,
+                stop_ns=(i + 1) * 2_000_000_000,
+                priority=i,
+            )
             for i in range(5)
         ]
         scheduler.enqueue(jobs)

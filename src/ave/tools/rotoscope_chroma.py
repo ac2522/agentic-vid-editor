@@ -29,9 +29,7 @@ class ChromaKeyBackend:
         self._tolerance = tolerance
         self._spill = spill_suppression
 
-    def segment_frame(
-        self, frame: np.ndarray, prompts: list[SegmentPrompt]
-    ) -> SegmentationMask:
+    def segment_frame(self, frame: np.ndarray, prompts: list[SegmentPrompt]) -> SegmentationMask:
         key_color_name = "green"
         for p in prompts:
             if p.kind == "text" and isinstance(p.value, str):

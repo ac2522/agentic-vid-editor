@@ -23,10 +23,7 @@ _NS = 1_000_000_000  # 1 second in ns
 
 def _make_scenes(count: int = 10, fps: float = 24.0) -> list[SceneBoundary]:
     """Create *count* sequential 1-second scenes."""
-    return [
-        SceneBoundary(start_ns=i * _NS, end_ns=(i + 1) * _NS, fps=fps)
-        for i in range(count)
-    ]
+    return [SceneBoundary(start_ns=i * _NS, end_ns=(i + 1) * _NS, fps=fps) for i in range(count)]
 
 
 def _make_tags(scenes: list[SceneBoundary], labels_cycle: list[str]) -> list[SceneTag]:
@@ -77,9 +74,7 @@ class TestSelectScenesByTags:
     def test_include_multiple_labels(self):
         scenes = _make_scenes(10)
         tags = _make_tags(scenes, ["action", "dialogue", "landscape"])
-        result = select_scenes_by_tags(
-            scenes, tags, include_labels={"action", "dialogue"}
-        )
+        result = select_scenes_by_tags(scenes, tags, include_labels={"action", "dialogue"})
         # action: 0,3,6,9  dialogue: 1,4,7
         assert result == [0, 1, 3, 4, 6, 7, 9]
 

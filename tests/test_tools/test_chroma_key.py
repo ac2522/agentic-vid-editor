@@ -15,9 +15,7 @@ class TestChromaKeyBackend:
         frame[30:70, 30:70] = [255, 255, 255]  # White foreground
 
         backend = ChromaKeyBackend()
-        mask = backend.segment_frame(
-            frame, [SegmentPrompt(kind="text", value="green")]
-        )
+        mask = backend.segment_frame(frame, [SegmentPrompt(kind="text", value="green")])
         assert mask.mask[50, 50] > 0.5  # foreground
         assert mask.mask[5, 5] < 0.5  # green = keyed out
 
@@ -27,9 +25,7 @@ class TestChromaKeyBackend:
         frame[30:70, 30:70] = [255, 255, 255]
 
         backend = ChromaKeyBackend()
-        mask = backend.segment_frame(
-            frame, [SegmentPrompt(kind="text", value="blue")]
-        )
+        mask = backend.segment_frame(frame, [SegmentPrompt(kind="text", value="blue")])
         assert mask.mask[50, 50] > 0.5
         assert mask.mask[5, 5] < 0.5
 
@@ -37,9 +33,7 @@ class TestChromaKeyBackend:
         frame = np.zeros((100, 100, 3), dtype=np.uint8)
         frame[:, :] = [0, 255, 0]
         backend = ChromaKeyBackend()
-        mask = backend.segment_frame(
-            frame, [SegmentPrompt(kind="text", value="green")]
-        )
+        mask = backend.segment_frame(frame, [SegmentPrompt(kind="text", value="green")])
         from ave.tools.rotoscope import MaskCorrection
 
         refined = backend.refine_mask(
@@ -51,9 +45,7 @@ class TestChromaKeyBackend:
         frames = [np.zeros((50, 50, 3), dtype=np.uint8) for _ in range(3)]
         backend = ChromaKeyBackend()
         masks = list(
-            backend.segment_video(
-                iter(frames), [SegmentPrompt(kind="text", value="green")]
-            )
+            backend.segment_video(iter(frames), [SegmentPrompt(kind="text", value="green")])
         )
         assert len(masks) == 3
         assert masks[0].frame_index == 0

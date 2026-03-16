@@ -39,11 +39,7 @@ class TestSkillMeta:
     def test_default_domain_is_general(self, tmp_path):
         skill = tmp_path / "nodomain.md"
         skill.write_text(
-            "---\n"
-            "name: nodomain\n"
-            "description: No domain specified\n"
-            "triggers: []\n"
-            "---\nbody\n"
+            "---\nname: nodomain\ndescription: No domain specified\ntriggers: []\n---\nbody\n"
         )
         meta = parse_skill_frontmatter(skill)
         assert meta.domain == "general"
@@ -51,8 +47,7 @@ class TestSkillMeta:
     def test_meta_is_frozen(self, tmp_path):
         skill = tmp_path / "frozen.md"
         skill.write_text(
-            "---\nname: frozen\ndescription: test\n"
-            "domain: editing\ntriggers: []\n---\nbody\n"
+            "---\nname: frozen\ndescription: test\ndomain: editing\ntriggers: []\n---\nbody\n"
         )
         meta = parse_skill_frontmatter(skill)
         with pytest.raises(AttributeError):
@@ -62,12 +57,10 @@ class TestSkillMeta:
 class TestDiscoverSkills:
     def test_discover_skills_from_directory(self, tmp_path):
         (tmp_path / "skill1.md").write_text(
-            "---\nname: s1\ndescription: first\n"
-            "domain: editing\ntriggers: []\n---\nbody\n"
+            "---\nname: s1\ndescription: first\ndomain: editing\ntriggers: []\n---\nbody\n"
         )
         (tmp_path / "skill2.md").write_text(
-            "---\nname: s2\ndescription: second\n"
-            "domain: color\ntriggers: []\n---\nbody\n"
+            "---\nname: s2\ndescription: second\ndomain: color\ntriggers: []\n---\nbody\n"
         )
         (tmp_path / "not-a-skill.txt").write_text("ignored")
         skills = discover_skills([tmp_path])
@@ -96,8 +89,7 @@ class TestDiscoverSkills:
     def test_discover_skips_invalid_frontmatter(self, tmp_path):
         (tmp_path / "bad.md").write_text("no frontmatter")
         (tmp_path / "good.md").write_text(
-            "---\nname: good\ndescription: works\n"
-            "domain: editing\ntriggers: []\n---\nbody\n"
+            "---\nname: good\ndescription: works\ndomain: editing\ntriggers: []\n---\nbody\n"
         )
         skills = discover_skills([tmp_path])
         assert len(skills) == 1

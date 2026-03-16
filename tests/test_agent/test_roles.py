@@ -62,8 +62,12 @@ def test_all_roles_contains_six():
     assert len(ALL_ROLES) == 6
     names = {r.name for r in ALL_ROLES}
     assert names == {
-        "editor", "colorist", "sound_designer", "transcriptionist",
-        "Researcher", "VFX Artist",
+        "editor",
+        "colorist",
+        "sound_designer",
+        "transcriptionist",
+        "Researcher",
+        "VFX Artist",
     }
 
 

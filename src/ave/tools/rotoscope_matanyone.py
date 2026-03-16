@@ -30,9 +30,7 @@ class MatAnyoneBackend:
     Model downloaded on first use via ModelManager with user consent.
     """
 
-    def segment_frame(
-        self, frame: np.ndarray, prompts: list[SegmentPrompt]
-    ) -> SegmentationMask:
+    def segment_frame(self, frame: np.ndarray, prompts: list[SegmentPrompt]) -> SegmentationMask:
         h, w = frame.shape[:2]
         # Soft alpha matte with gradual falloff (simulating real output)
         cy, cx = h // 2, w // 2

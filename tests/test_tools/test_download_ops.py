@@ -24,24 +24,30 @@ from ave.tools.download_ops import (
 
 class TestSearchYoutube:
     def test_returns_search_results(self):
-        fake_output = "\n".join([
-            json.dumps({
-                "id": "abc123",
-                "title": "Lo-fi beats",
-                "webpage_url": "https://www.youtube.com/watch?v=abc123",
-                "duration": 3600,
-                "uploader": "ChilledCow",
-                "view_count": 1_000_000,
-            }),
-            json.dumps({
-                "id": "def456",
-                "title": "Jazz piano",
-                "webpage_url": "https://www.youtube.com/watch?v=def456",
-                "duration": 1800,
-                "uploader": "JazzFM",
-                "view_count": 50_000,
-            }),
-        ])
+        fake_output = "\n".join(
+            [
+                json.dumps(
+                    {
+                        "id": "abc123",
+                        "title": "Lo-fi beats",
+                        "webpage_url": "https://www.youtube.com/watch?v=abc123",
+                        "duration": 3600,
+                        "uploader": "ChilledCow",
+                        "view_count": 1_000_000,
+                    }
+                ),
+                json.dumps(
+                    {
+                        "id": "def456",
+                        "title": "Jazz piano",
+                        "webpage_url": "https://www.youtube.com/watch?v=def456",
+                        "duration": 1800,
+                        "uploader": "JazzFM",
+                        "view_count": 50_000,
+                    }
+                ),
+            ]
+        )
 
         with patch("ave.tools.download_ops._run_ytdlp") as mock_run:
             mock_run.return_value = fake_output
@@ -70,23 +76,25 @@ class TestSearchYoutube:
 
 class TestListFormats:
     def test_returns_format_list(self):
-        fake_output = json.dumps({
-            "id": "abc123",
-            "title": "Test Video",
-            "formats": [
-                {
-                    "format_id": "137",
-                    "ext": "mp4",
-                    "resolution": "1920x1080",
-                    "fps": 30,
-                    "vcodec": "avc1.640028",
-                    "acodec": "none",
-                    "filesize": 50_000_000,
-                    "format_note": "1080p",
-                    "tbr": 4000.0,
-                },
-            ],
-        })
+        fake_output = json.dumps(
+            {
+                "id": "abc123",
+                "title": "Test Video",
+                "formats": [
+                    {
+                        "format_id": "137",
+                        "ext": "mp4",
+                        "resolution": "1920x1080",
+                        "fps": 30,
+                        "vcodec": "avc1.640028",
+                        "acodec": "none",
+                        "filesize": 50_000_000,
+                        "format_note": "1080p",
+                        "tbr": 4000.0,
+                    },
+                ],
+            }
+        )
 
         with patch("ave.tools.download_ops._run_ytdlp") as mock_run:
             mock_run.return_value = fake_output
@@ -111,16 +119,18 @@ class TestListFormats:
 
 class TestDownloadMedia:
     def test_download_returns_result(self, tmp_path):
-        fake_output = json.dumps({
-            "id": "abc123",
-            "title": "Test Song",
-            "webpage_url": "https://www.youtube.com/watch?v=abc123",
-            "duration": 240,
-            "requested_downloads": [
-                {"filepath": str(tmp_path / "Test Song.mp4")},
-            ],
-            "format_id": "137+140",
-        })
+        fake_output = json.dumps(
+            {
+                "id": "abc123",
+                "title": "Test Song",
+                "webpage_url": "https://www.youtube.com/watch?v=abc123",
+                "duration": 240,
+                "requested_downloads": [
+                    {"filepath": str(tmp_path / "Test Song.mp4")},
+                ],
+                "format_id": "137+140",
+            }
+        )
 
         with patch("ave.tools.download_ops._run_ytdlp") as mock_run:
             mock_run.return_value = fake_output
@@ -137,16 +147,18 @@ class TestDownloadMedia:
         assert result.duration_seconds == 240
 
     def test_download_audio_only(self, tmp_path):
-        fake_output = json.dumps({
-            "id": "abc123",
-            "title": "Cool Song",
-            "webpage_url": "https://www.youtube.com/watch?v=abc123",
-            "duration": 180,
-            "requested_downloads": [
-                {"filepath": str(tmp_path / "Cool Song.mp3")},
-            ],
-            "format_id": "140",
-        })
+        fake_output = json.dumps(
+            {
+                "id": "abc123",
+                "title": "Cool Song",
+                "webpage_url": "https://www.youtube.com/watch?v=abc123",
+                "duration": 180,
+                "requested_downloads": [
+                    {"filepath": str(tmp_path / "Cool Song.mp3")},
+                ],
+                "format_id": "140",
+            }
+        )
 
         with patch("ave.tools.download_ops._run_ytdlp") as mock_run:
             mock_run.return_value = fake_output
@@ -178,16 +190,18 @@ class TestDownloadMedia:
                 )
 
     def test_download_with_format_id(self, tmp_path):
-        fake_output = json.dumps({
-            "id": "abc123",
-            "title": "Specific Format",
-            "webpage_url": "https://www.youtube.com/watch?v=abc123",
-            "duration": 300,
-            "requested_downloads": [
-                {"filepath": str(tmp_path / "Specific Format.mp4")},
-            ],
-            "format_id": "247+251",
-        })
+        fake_output = json.dumps(
+            {
+                "id": "abc123",
+                "title": "Specific Format",
+                "webpage_url": "https://www.youtube.com/watch?v=abc123",
+                "duration": 300,
+                "requested_downloads": [
+                    {"filepath": str(tmp_path / "Specific Format.mp4")},
+                ],
+                "format_id": "247+251",
+            }
+        )
 
         with patch("ave.tools.download_ops._run_ytdlp") as mock_run:
             mock_run.return_value = fake_output

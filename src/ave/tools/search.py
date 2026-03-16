@@ -36,8 +36,6 @@ VIDEO_EDITING_SOURCES = (
 class SearchBackend(Protocol):
     """Protocol for web search backends. Type-annotation only."""
 
-    async def search(
-        self, query: str, max_results: int = 10
-    ) -> list[SearchResult]: ...
+    async def search(self, query: str, max_results: int = 10) -> list[SearchResult]: ...
 
     async def fetch_page(self, url: str) -> PageContent: ...

@@ -16,9 +16,7 @@ class TestMaskEvaluator:
         data = np.zeros((480, 640), dtype=np.float32)
         y1, x1, y2, x2 = fill_region
         data[y1:y2, x1:x2] = 1.0
-        return SegmentationMask(
-            mask=data, confidence=0.9, frame_index=frame_idx, metadata={}
-        )
+        return SegmentationMask(mask=data, confidence=0.9, frame_index=frame_idx, metadata={})
 
     def test_perfect_masks_score_high(self):
         masks = [self._make_mask(i) for i in range(5)]

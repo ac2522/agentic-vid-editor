@@ -87,9 +87,7 @@ def create_mcp_server(
         )
 
     @mcp.tool()
-    def render_preview(
-        segment: str | None = None, format: str = "jpeg"
-    ) -> dict:
+    def render_preview(segment: str | None = None, format: str = "jpeg") -> dict:
         """Render a preview frame or segment.
 
         Args:

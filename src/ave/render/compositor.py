@@ -62,9 +62,7 @@ class CompositorStrategy:
             return ["cpu"]
 
     @staticmethod
-    def select(
-        preference: str = "auto", available: list[str] | None = None
-    ) -> CompositorSelection:
+    def select(preference: str = "auto", available: list[str] | None = None) -> CompositorSelection:
         """Select best compositor.
 
         preference: "auto", "skia", "cpu", or "gl"

@@ -122,9 +122,7 @@ async def _handle_chat_ws(request: web.Request) -> web.WebSocketResponse:
                 if chat_session is not None:
                     chat_session.cancel()
             else:
-                await ws.send_json(
-                    format_error(f"Unknown message type: {parsed.get('type')}")
-                )
+                await ws.send_json(format_error(f"Unknown message type: {parsed.get('type')}"))
         elif msg.type in (web.WSMsgType.ERROR, web.WSMsgType.CLOSE):
             break
 

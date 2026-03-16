@@ -86,10 +86,7 @@ COLORIST_ROLE = AgentRole(
 
 SOUND_DESIGNER_ROLE = AgentRole(
     name="sound_designer",
-    description=(
-        "Audio specialist for volume adjustment, fades, normalization, "
-        "and audio mixing."
-    ),
+    description=("Audio specialist for volume adjustment, fades, normalization, and audio mixing."),
     system_prompt=(
         "You are a professional sound designer working within the AVE (Agentic Video Editor) framework.\n\n"
         "## Your Expertise\n"

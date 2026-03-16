@@ -24,9 +24,7 @@ class ConformError(Exception):
 
     def __init__(self, missing_files: list[Path]) -> None:
         self.missing_files = missing_files
-        super().__init__(
-            f"Missing full-res files: {[str(p) for p in missing_files]}"
-        )
+        super().__init__(f"Missing full-res files: {[str(p) for p in missing_files]}")
 
 
 @dataclass(frozen=True)
@@ -61,9 +59,7 @@ class ProxyWorkflow:
             return Path(proxy_path)
         return Path(asset_entry["working_path"])
 
-    def conform_timeline(
-        self, xges_content: str, path_mapping: dict[str, str]
-    ) -> ConformResult:
+    def conform_timeline(self, xges_content: str, path_mapping: dict[str, str]) -> ConformResult:
         """Replace proxy paths with full-res paths in XGES XML content.
 
         path_mapping: {proxy_path: full_res_path}
@@ -73,9 +69,7 @@ class ProxyWorkflow:
         """
         # Validate all full-res paths exist
         missing = [
-            Path(full_path)
-            for full_path in path_mapping.values()
-            if not Path(full_path).exists()
+            Path(full_path) for full_path in path_mapping.values() if not Path(full_path).exists()
         ]
         if missing:
             raise ConformError(missing)
@@ -91,9 +85,7 @@ class ProxyWorkflow:
 
         return ConformResult(swaps=total_swaps, warnings=warnings)
 
-    def build_path_mapping(
-        self, registry_entries: list[dict]
-    ) -> dict[str, str]:
+    def build_path_mapping(self, registry_entries: list[dict]) -> dict[str, str]:
         """Build proxy->full-res path mapping from asset registry entries.
 
         Each entry has 'proxy_path' and 'working_path' keys.

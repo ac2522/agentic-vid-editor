@@ -26,6 +26,7 @@ from ave.agent.session import EditingSession
 # Skip marker — requires Anthropic API key
 # ---------------------------------------------------------------------------
 
+
 def _load_env():
     """Load .env file if present."""
     env_path = Path(__file__).resolve().parents[2] / ".env"
@@ -36,14 +37,18 @@ def _load_env():
                 key, _, value = line.partition("=")
                 os.environ.setdefault(key.strip(), value.strip())
 
+
 _load_env()
+
 
 def _anthropic_available() -> bool:
     try:
         import anthropic  # noqa: F401
+
         return bool(os.environ.get("ANTHROPIC_API_KEY"))
     except ImportError:
         return False
+
 
 requires_anthropic = pytest.mark.skipif(
     not _anthropic_available(), reason="Anthropic API key not set or SDK missing"
@@ -62,6 +67,7 @@ MAX_TURNS = 20
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _make_xges(tmp_path: Path) -> Path:
     """Create a minimal .xges file."""
@@ -120,11 +126,36 @@ def _make_transcript_json() -> str:
 def _make_scene_boundaries_json() -> str:
     """Realistic scene boundary data for rough-cut tests."""
     scenes = [
-        {"start_ns": 0, "end_ns": 5 * SEC, "start_timecode": "00:00:00:00", "end_timecode": "00:00:05:00"},
-        {"start_ns": 5 * SEC, "end_ns": 12 * SEC, "start_timecode": "00:00:05:00", "end_timecode": "00:00:12:00"},
-        {"start_ns": 12 * SEC, "end_ns": 18 * SEC, "start_timecode": "00:00:12:00", "end_timecode": "00:00:18:00"},
-        {"start_ns": 18 * SEC, "end_ns": 25 * SEC, "start_timecode": "00:00:18:00", "end_timecode": "00:00:25:00"},
-        {"start_ns": 25 * SEC, "end_ns": 30 * SEC, "start_timecode": "00:00:25:00", "end_timecode": "00:00:30:00"},
+        {
+            "start_ns": 0,
+            "end_ns": 5 * SEC,
+            "start_timecode": "00:00:00:00",
+            "end_timecode": "00:00:05:00",
+        },
+        {
+            "start_ns": 5 * SEC,
+            "end_ns": 12 * SEC,
+            "start_timecode": "00:00:05:00",
+            "end_timecode": "00:00:12:00",
+        },
+        {
+            "start_ns": 12 * SEC,
+            "end_ns": 18 * SEC,
+            "start_timecode": "00:00:12:00",
+            "end_timecode": "00:00:18:00",
+        },
+        {
+            "start_ns": 18 * SEC,
+            "end_ns": 25 * SEC,
+            "start_timecode": "00:00:18:00",
+            "end_timecode": "00:00:25:00",
+        },
+        {
+            "start_ns": 25 * SEC,
+            "end_ns": 30 * SEC,
+            "start_timecode": "00:00:25:00",
+            "end_timecode": "00:00:30:00",
+        },
     ]
     return json.dumps(scenes)
 
@@ -199,11 +230,13 @@ def _run_agent_loop(
         for block in response.content:
             if block.type == "tool_use":
                 result = orchestrator.handle_tool_call(block.name, block.input)
-                tool_results.append({
-                    "type": "tool_result",
-                    "tool_use_id": block.id,
-                    "content": result,
-                })
+                tool_results.append(
+                    {
+                        "type": "tool_result",
+                        "tool_use_id": block.id,
+                        "content": result,
+                    }
+                )
 
         if not tool_results:
             break
@@ -410,7 +443,9 @@ class TestHighlightReel:
         )
 
         names = _tool_names(history)
-        assert "create_rough_cut" in names, f"Expected 'create_rough_cut' in tool calls, got: {names}"
+        assert "create_rough_cut" in names, (
+            f"Expected 'create_rough_cut' in tool calls, got: {names}"
+        )
         assert state.has("rough_cut_created")
 
     def test_professional_rough_cut(self, tmp_path):
@@ -429,7 +464,9 @@ class TestHighlightReel:
         )
 
         names = _tool_names(history)
-        assert "create_rough_cut" in names, f"Expected 'create_rough_cut' in tool calls, got: {names}"
+        assert "create_rough_cut" in names, (
+            f"Expected 'create_rough_cut' in tool calls, got: {names}"
+        )
         assert state.has("rough_cut_created")
 
         # Verify the professional's exact parameters were used

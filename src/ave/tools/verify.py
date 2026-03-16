@@ -71,9 +71,7 @@ def compare_metrics(
         elif isinstance(exp_val, (int, float)):
             key_tol = tol.get(key, _DEFAULT_FLOAT_TOLERANCE if isinstance(exp_val, float) else 0)
             if abs(act_val - exp_val) > key_tol:
-                discreps.append(
-                    f"{key}: expected {exp_val!r} (±{key_tol}), got {act_val!r}"
-                )
+                discreps.append(f"{key}: expected {exp_val!r} (±{key_tol}), got {act_val!r}")
         else:
             # String or other — exact equality
             if act_val != exp_val:

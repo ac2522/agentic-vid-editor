@@ -102,9 +102,7 @@ class RenderScheduler:
         return len(self._failed)
 
     @staticmethod
-    def prioritize_by_playhead(
-        jobs: list[RenderJob], playhead_ns: int
-    ) -> list[RenderJob]:
+    def prioritize_by_playhead(jobs: list[RenderJob], playhead_ns: int) -> list[RenderJob]:
         """Sort jobs by distance from playhead (closest first).
 
         Distance is measured from playhead to nearest edge of the segment.

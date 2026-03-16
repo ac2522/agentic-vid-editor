@@ -76,5 +76,8 @@ class TestMcpServer:
             _call(
                 server,
                 "call_tool",
-                {"name": "trim", "params": {"clip_duration_ns": 10_000, "in_ns": 0, "out_ns": 5_000}},
+                {
+                    "name": "trim",
+                    "params": {"clip_duration_ns": 10_000, "in_ns": 0, "out_ns": 5_000},
+                },
             )

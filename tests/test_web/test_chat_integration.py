@@ -123,10 +123,7 @@ class TestChatSessionMessage:
         resp = await ws.receive_json()
         assert resp["type"] == "error"
         # Either "anthropic package not installed" or "Agent not available"
-        assert any(
-            phrase in resp["message"]
-            for phrase in ("anthropic", "Agent not available")
-        )
+        assert any(phrase in resp["message"] for phrase in ("anthropic", "Agent not available"))
         await ws.close()
 
     async def test_cancel_does_not_error(self, client):

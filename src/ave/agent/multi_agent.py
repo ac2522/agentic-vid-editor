@@ -56,9 +56,7 @@ class MultiAgentOrchestrator:
 
     def get_system_prompt(self) -> str:
         """System prompt that describes available specialist agents and the meta-tool workflow."""
-        role_lines = "\n".join(
-            f"- {role.name}: {role.description}" for role in self._roles
-        )
+        role_lines = "\n".join(f"- {role.name}: {role.description}" for role in self._roles)
         return (
             "You are a supervising AI video editor coordinating specialist agents.\n\n"
             f"Available specialists:\n{role_lines}\n\n"

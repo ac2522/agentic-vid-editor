@@ -186,10 +186,7 @@ PRESETS: dict[str, RenderPreset] = {
 
 def list_presets() -> list[dict]:
     """Return [{name, description}, ...] for all presets."""
-    return [
-        {"name": preset.name, "description": preset.description}
-        for preset in PRESETS.values()
-    ]
+    return [{"name": preset.name, "description": preset.description} for preset in PRESETS.values()]
 
 
 def get_preset(name: str) -> RenderPreset:

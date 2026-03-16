@@ -83,7 +83,11 @@ class TestDetectIDT:
     def test_sony_slog3_sgamut3cine_exact(self):
         """Sony S-Log3/S-Gamut3.Cine must map to the correct OCIO IDT."""
         # Use the exact key from IDT_MAP for Sony
-        [k for k in IDT_MAP if "slog3" in str(IDT_MAP[k]).lower() or "s-log3" in str(IDT_MAP[k]).lower()]
+        [
+            k
+            for k in IDT_MAP
+            if "slog3" in str(IDT_MAP[k]).lower() or "s-log3" in str(IDT_MAP[k]).lower()
+        ]
         # Instead, test with a known key
         _make_video_stream(
             color_space="bt2020nc",

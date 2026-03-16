@@ -20,14 +20,10 @@ class ToolTransitionGraph:
         """Record a transition from one tool to another."""
         if from_tool not in self._transitions:
             self._transitions[from_tool] = {}
-        self._transitions[from_tool][to_tool] = (
-            self._transitions[from_tool].get(to_tool, 0) + 1
-        )
+        self._transitions[from_tool][to_tool] = self._transitions[from_tool].get(to_tool, 0) + 1
         self._total_from[from_tool] = self._total_from.get(from_tool, 0) + 1
 
-    def suggest_next(
-        self, current_tool: str, limit: int = 5
-    ) -> list[tuple[str, float]]:
+    def suggest_next(self, current_tool: str, limit: int = 5) -> list[tuple[str, float]]:
         """Suggest next tools based on transition probabilities.
 
         Returns list of (tool_name, probability) sorted by probability descending.
@@ -37,8 +33,7 @@ class ToolTransitionGraph:
 
         total = self._total_from[current_tool]
         suggestions = [
-            (to_tool, count / total)
-            for to_tool, count in self._transitions[current_tool].items()
+            (to_tool, count / total) for to_tool, count in self._transitions[current_tool].items()
         ]
         suggestions.sort(key=lambda x: x[1], reverse=True)
         return suggestions[:limit]

@@ -151,9 +151,7 @@ def test_orchestrator_handle_call_tool(orchestrator: Orchestrator):
 def test_orchestrator_handle_call_tool_error(orchestrator: Orchestrator):
     """Tool call error returns error message, not exception."""
     # "double" requires "computed" state which hasn't been set
-    result = orchestrator.handle_tool_call(
-        "call_tool", {"tool_name": "double", "params": {"x": 5}}
-    )
+    result = orchestrator.handle_tool_call("call_tool", {"tool_name": "double", "params": {"x": 5}})
 
     assert "Error" in result
     assert "PrerequisiteError" in result

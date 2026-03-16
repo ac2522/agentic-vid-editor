@@ -22,6 +22,7 @@ from ave.tools.vision import SceneTag, VisualAnalysis
 # Mock VisionBackend
 # ---------------------------------------------------------------------------
 
+
 class MockVisionBackend:
     """Deterministic mock backend for testing the classification pipeline."""
 
@@ -45,6 +46,7 @@ class MockVisionBackend:
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture()
 def mock_backend() -> MockVisionBackend:
@@ -76,6 +78,7 @@ def keyframes_dir(tmp_path: Path, sample_scenes: list[SceneBoundary]) -> Path:
 # ---------------------------------------------------------------------------
 # Tests
 # ---------------------------------------------------------------------------
+
 
 class TestShotLabels:
     def test_at_least_10_entries(self):
@@ -198,9 +201,7 @@ class TestClassifyVideo:
         for tag in result.tags:
             assert set(tag.labels.keys()) == set(custom_labels)
 
-    def test_empty_scenes_raises(
-        self, tmp_path: Path, mock_backend: MockVisionBackend
-    ):
+    def test_empty_scenes_raises(self, tmp_path: Path, mock_backend: MockVisionBackend):
         with pytest.raises(ClassificationError):
             classify_video(
                 video_path=Path("/fake/video.mp4"),

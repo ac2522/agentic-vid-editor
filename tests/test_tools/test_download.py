@@ -206,14 +206,16 @@ class TestBuildDownloadArgs:
 
 class TestParseSearchResults:
     def test_parses_single_result(self):
-        data = json.dumps({
-            "id": "abc123",
-            "title": "Test Video",
-            "webpage_url": "https://www.youtube.com/watch?v=abc123",
-            "duration": 120,
-            "uploader": "Test Channel",
-            "view_count": 5000,
-        })
+        data = json.dumps(
+            {
+                "id": "abc123",
+                "title": "Test Video",
+                "webpage_url": "https://www.youtube.com/watch?v=abc123",
+                "duration": 120,
+                "uploader": "Test Channel",
+                "view_count": 5000,
+            }
+        )
         results = parse_search_results(data)
         assert len(results) == 1
         r = results[0]
@@ -227,14 +229,18 @@ class TestParseSearchResults:
     def test_parses_multiple_results(self):
         lines = []
         for i in range(3):
-            lines.append(json.dumps({
-                "id": f"vid{i}",
-                "title": f"Video {i}",
-                "webpage_url": f"https://www.youtube.com/watch?v=vid{i}",
-                "duration": 60 * (i + 1),
-                "uploader": f"Channel {i}",
-                "view_count": 100 * (i + 1),
-            }))
+            lines.append(
+                json.dumps(
+                    {
+                        "id": f"vid{i}",
+                        "title": f"Video {i}",
+                        "webpage_url": f"https://www.youtube.com/watch?v=vid{i}",
+                        "duration": 60 * (i + 1),
+                        "uploader": f"Channel {i}",
+                        "view_count": 100 * (i + 1),
+                    }
+                )
+            )
         raw = "\n".join(lines)
         results = parse_search_results(raw)
         assert len(results) == 3
@@ -242,11 +248,13 @@ class TestParseSearchResults:
         assert results[2].video_id == "vid2"
 
     def test_handles_missing_fields(self):
-        data = json.dumps({
-            "id": "xyz",
-            "title": "Minimal",
-            "webpage_url": "https://youtube.com/watch?v=xyz",
-        })
+        data = json.dumps(
+            {
+                "id": "xyz",
+                "title": "Minimal",
+                "webpage_url": "https://youtube.com/watch?v=xyz",
+            }
+        )
         results = parse_search_results(data)
         assert len(results) == 1
         assert results[0].duration_seconds == 0
@@ -264,34 +272,36 @@ class TestParseSearchResults:
 
 class TestParseFormatList:
     def test_parses_formats(self):
-        data = json.dumps({
-            "id": "abc",
-            "title": "Test",
-            "formats": [
-                {
-                    "format_id": "137",
-                    "ext": "mp4",
-                    "resolution": "1920x1080",
-                    "fps": 30,
-                    "vcodec": "avc1.640028",
-                    "acodec": "none",
-                    "filesize": 50_000_000,
-                    "format_note": "1080p",
-                    "tbr": 4000.0,
-                },
-                {
-                    "format_id": "140",
-                    "ext": "m4a",
-                    "resolution": "audio only",
-                    "fps": None,
-                    "vcodec": "none",
-                    "acodec": "mp4a.40.2",
-                    "filesize": 3_000_000,
-                    "format_note": "medium",
-                    "tbr": 128.0,
-                },
-            ],
-        })
+        data = json.dumps(
+            {
+                "id": "abc",
+                "title": "Test",
+                "formats": [
+                    {
+                        "format_id": "137",
+                        "ext": "mp4",
+                        "resolution": "1920x1080",
+                        "fps": 30,
+                        "vcodec": "avc1.640028",
+                        "acodec": "none",
+                        "filesize": 50_000_000,
+                        "format_note": "1080p",
+                        "tbr": 4000.0,
+                    },
+                    {
+                        "format_id": "140",
+                        "ext": "m4a",
+                        "resolution": "audio only",
+                        "fps": None,
+                        "vcodec": "none",
+                        "acodec": "mp4a.40.2",
+                        "filesize": 3_000_000,
+                        "format_note": "medium",
+                        "tbr": 128.0,
+                    },
+                ],
+            }
+        )
         formats = parse_format_list(data)
         assert len(formats) == 2
         assert isinstance(formats[0], FormatInfo)
@@ -308,23 +318,25 @@ class TestParseFormatList:
         assert parse_format_list(data) == []
 
     def test_format_with_both_streams(self):
-        data = json.dumps({
-            "id": "abc",
-            "title": "Test",
-            "formats": [
-                {
-                    "format_id": "18",
-                    "ext": "mp4",
-                    "resolution": "640x360",
-                    "fps": 30,
-                    "vcodec": "avc1.42001E",
-                    "acodec": "mp4a.40.2",
-                    "filesize": 10_000_000,
-                    "format_note": "360p",
-                    "tbr": 500.0,
-                },
-            ],
-        })
+        data = json.dumps(
+            {
+                "id": "abc",
+                "title": "Test",
+                "formats": [
+                    {
+                        "format_id": "18",
+                        "ext": "mp4",
+                        "resolution": "640x360",
+                        "fps": 30,
+                        "vcodec": "avc1.42001E",
+                        "acodec": "mp4a.40.2",
+                        "filesize": 10_000_000,
+                        "format_note": "360p",
+                        "tbr": 500.0,
+                    },
+                ],
+            }
+        )
         formats = parse_format_list(data)
         assert len(formats) == 1
         assert formats[0].has_video is True

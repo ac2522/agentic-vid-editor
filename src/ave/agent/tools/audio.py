@@ -12,8 +12,17 @@ def register_audio_tools(registry: ToolRegistry) -> None:
         domain="audio",
         requires=["timeline_loaded", "clip_exists"],
         provides=["volume_set"],
-        tags=["loudness", "gain", "audio level", "make louder", "make quieter",
-              "turn up", "turn down", "mute", "boost audio"],
+        tags=[
+            "loudness",
+            "gain",
+            "audio level",
+            "make louder",
+            "make quieter",
+            "turn up",
+            "turn down",
+            "mute",
+            "boost audio",
+        ],
         modifies_timeline=True,
     )
     def volume(level_db: float):
@@ -26,8 +35,7 @@ def register_audio_tools(registry: ToolRegistry) -> None:
         domain="audio",
         requires=["timeline_loaded", "clip_exists"],
         provides=["fade_applied"],
-        tags=["fade in", "fade out", "audio ramp", "smooth start", "smooth end",
-              "gradual"],
+        tags=["fade in", "fade out", "audio ramp", "smooth start", "smooth end", "gradual"],
         modifies_timeline=True,
     )
     def fade(clip_duration_ns: int, fade_in_ns: int, fade_out_ns: int):
@@ -40,8 +48,14 @@ def register_audio_tools(registry: ToolRegistry) -> None:
         domain="audio",
         requires=["timeline_loaded", "clip_exists"],
         provides=["audio_normalized"],
-        tags=["level audio", "consistent volume", "loudness standard",
-              "even out audio", "LUFS", "peak normalize"],
+        tags=[
+            "level audio",
+            "consistent volume",
+            "loudness standard",
+            "even out audio",
+            "LUFS",
+            "peak normalize",
+        ],
         modifies_timeline=True,
     )
     def normalize(current_peak_db: float, target_peak_db: float):

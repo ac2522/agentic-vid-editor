@@ -122,11 +122,15 @@ def test_classify_prerequisite_enforced(full_registry):
     state.add("timeline_loaded")
     # scenes_detected NOT added — should fail
     with pytest.raises(PrerequisiteError, match="scenes_detected"):
-        full_registry.call_tool("classify_shots", {
-            "video_path": "/tmp/test.mp4",
-            "scenes_json": "[]",
-            "output_dir": "/tmp/out",
-        }, session_state=state)
+        full_registry.call_tool(
+            "classify_shots",
+            {
+                "video_path": "/tmp/test.mp4",
+                "scenes_json": "[]",
+                "output_dir": "/tmp/out",
+            },
+            session_state=state,
+        )
 
 
 def test_create_rough_cut_requires_scenes_detected(full_registry):
@@ -172,8 +176,16 @@ def test_all_domains_listed(full_registry):
     domains = full_registry.list_domains()
     domain_names = {d["domain"] for d in domains}
     assert domain_names == {
-        "editing", "audio", "color", "transcription", "render", "project",
-        "compositing", "motion_graphics", "scene", "interchange",
+        "editing",
+        "audio",
+        "color",
+        "transcription",
+        "render",
+        "project",
+        "compositing",
+        "motion_graphics",
+        "scene",
+        "interchange",
     }
 
 
@@ -284,7 +296,11 @@ def test_render_with_preset_invalid_name(full_registry):
     with pytest.raises(PresetError):
         full_registry.call_tool(
             "render_with_preset",
-            {"xges_path": "/tmp/test.xges", "preset_name": "nonexistent", "output_path": "/tmp/out.mp4"},
+            {
+                "xges_path": "/tmp/test.xges",
+                "preset_name": "nonexistent",
+                "output_path": "/tmp/out.mp4",
+            },
             session_state=state,
         )
 

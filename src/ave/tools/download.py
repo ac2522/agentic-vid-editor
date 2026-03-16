@@ -189,14 +189,16 @@ def parse_search_results(raw_output: str) -> list[SearchResult]:
         except json.JSONDecodeError:
             continue
 
-        results.append(SearchResult(
-            video_id=data.get("id", ""),
-            title=data.get("title", ""),
-            url=data.get("webpage_url", ""),
-            duration_seconds=data.get("duration", 0) or 0,
-            uploader=data.get("uploader", "") or "",
-            view_count=data.get("view_count", 0) or 0,
-        ))
+        results.append(
+            SearchResult(
+                video_id=data.get("id", ""),
+                title=data.get("title", ""),
+                url=data.get("webpage_url", ""),
+                duration_seconds=data.get("duration", 0) or 0,
+                uploader=data.get("uploader", "") or "",
+                view_count=data.get("view_count", 0) or 0,
+            )
+        )
 
     return results
 
@@ -216,18 +218,20 @@ def parse_format_list(raw_output: str) -> list[FormatInfo]:
         has_video = vcodec != "none"
         has_audio = acodec != "none"
 
-        formats.append(FormatInfo(
-            format_id=f.get("format_id", ""),
-            ext=f.get("ext", ""),
-            resolution=f.get("resolution", ""),
-            fps=f.get("fps"),
-            vcodec=vcodec,
-            acodec=acodec,
-            filesize=f.get("filesize"),
-            format_note=f.get("format_note", ""),
-            bitrate=f.get("tbr"),
-            has_video=has_video,
-            has_audio=has_audio,
-        ))
+        formats.append(
+            FormatInfo(
+                format_id=f.get("format_id", ""),
+                ext=f.get("ext", ""),
+                resolution=f.get("resolution", ""),
+                fps=f.get("fps"),
+                vcodec=vcodec,
+                acodec=acodec,
+                filesize=f.get("filesize"),
+                format_note=f.get("format_note", ""),
+                bitrate=f.get("tbr"),
+                has_video=has_video,
+                has_audio=has_audio,
+            )
+        )
 
     return formats

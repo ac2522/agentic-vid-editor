@@ -58,9 +58,7 @@ class TestPluginLoader:
         loader = PluginLoader(registry)
         loader.register_manifest(manifest)
 
-        result = loader.call_plugin_tool(
-            manifest.name, "greet", {"name": "world"}
-        )
+        result = loader.call_plugin_tool(manifest.name, "greet", {"name": "world"})
         assert result == {"greeting": "hello world"}
         assert loader.is_loaded(manifest.name)
 

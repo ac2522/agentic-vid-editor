@@ -18,9 +18,7 @@ class PluginLoader:
         self._loaded: set[str] = set()
         self._failed: dict[str, str] = {}  # plugin_name -> error message
 
-    def register_manifest(
-        self, manifest: PluginManifest, namespace: str = "user"
-    ) -> None:
+    def register_manifest(self, manifest: PluginManifest, namespace: str = "user") -> None:
         """Register plugin summaries into the registry (no code loaded)."""
         self._manifests[manifest.name] = manifest
         for tool_stub in manifest.tools:
@@ -35,9 +33,7 @@ class PluginLoader:
     def is_loaded(self, plugin_name: str) -> bool:
         return plugin_name in self._loaded
 
-    def call_plugin_tool(
-        self, plugin_name: str, tool_name: str, params: dict
-    ) -> object:
+    def call_plugin_tool(self, plugin_name: str, tool_name: str, params: dict) -> object:
         """Load plugin if needed, then call the tool."""
         if plugin_name in self._failed:
             raise RuntimeError(
@@ -59,9 +55,7 @@ class PluginLoader:
         module_name = f"ave_plugin_{manifest.name.replace('-', '_')}"
 
         try:
-            spec = importlib.util.spec_from_file_location(
-                module_name, init_path
-            )
+            spec = importlib.util.spec_from_file_location(module_name, init_path)
             if spec is None or spec.loader is None:
                 raise ImportError(f"Cannot load {init_path}")
             module = importlib.util.module_from_spec(spec)
@@ -76,9 +70,7 @@ class PluginLoader:
                     if storage and self._registry._tools.get(storage, {}).get("stub"):
                         del self._registry._tools[storage]
                         del self._registry._ns_to_short[full_name]
-                        short_list = self._registry._short_names.get(
-                            tool_stub.name, []
-                        )
+                        short_list = self._registry._short_names.get(tool_stub.name, [])
                         if full_name in short_list:
                             short_list.remove(full_name)
 
@@ -87,6 +79,4 @@ class PluginLoader:
             self._loaded.add(plugin_name)
         except Exception as exc:
             self._failed[plugin_name] = str(exc)
-            raise RuntimeError(
-                f"Plugin '{plugin_name}' failed to load: {exc}"
-            ) from exc
+            raise RuntimeError(f"Plugin '{plugin_name}' failed to load: {exc}") from exc

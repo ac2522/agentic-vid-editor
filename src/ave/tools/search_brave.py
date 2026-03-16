@@ -47,9 +47,7 @@ class BraveSearchBackend:
 
     async def fetch_page(self, url: str) -> PageContent:
         async with aiohttp.ClientSession() as session:
-            async with session.get(
-                url, timeout=aiohttp.ClientTimeout(total=15)
-            ) as resp:
+            async with session.get(url, timeout=aiohttp.ClientTimeout(total=15)) as resp:
                 text = await resp.text()
         headings = re.findall(r"<h[1-6][^>]*>(.*?)</h[1-6]>", text)
         clean = re.sub(r"<[^>]+>", " ", text)
@@ -64,7 +62,5 @@ class BraveSearchBackend:
         }
         params = {"q": query, "count": str(count)}
         async with aiohttp.ClientSession() as session:
-            async with session.get(
-                self._BASE_URL, headers=headers, params=params
-            ) as resp:
+            async with session.get(self._BASE_URL, headers=headers, params=params) as resp:
                 return await resp.json()

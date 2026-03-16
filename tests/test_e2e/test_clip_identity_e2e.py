@@ -65,9 +65,7 @@ class TestClipIdentityE2EWorkflow:
     def test_step2_get_schema_for_list_clips(self, setup):
         """Agent gets the full schema for list_clips to learn its parameters."""
         orchestrator, _, _ = setup
-        result = orchestrator.handle_tool_call(
-            "get_tool_schema", {"tool_name": "list_clips"}
-        )
+        result = orchestrator.handle_tool_call("get_tool_schema", {"tool_name": "list_clips"})
         assert "xges_path" in result
         assert "clip_exists" in result  # Shows it provides clip_exists
 

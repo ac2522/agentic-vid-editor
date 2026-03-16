@@ -12,8 +12,15 @@ def register_scene_tools(registry: ToolRegistry) -> None:
         domain="scene",
         requires=["timeline_loaded"],
         provides=["scenes_detected"],
-        tags=["scene detection", "find cuts", "shot boundaries", "auto detect",
-              "scene change", "cut detection", "find scenes"],
+        tags=[
+            "scene detection",
+            "find cuts",
+            "shot boundaries",
+            "auto detect",
+            "scene change",
+            "cut detection",
+            "find scenes",
+        ],
     )
     def detect_scenes(
         video_path: str,
@@ -37,8 +44,16 @@ def register_scene_tools(registry: ToolRegistry) -> None:
         domain="scene",
         requires=["scenes_detected"],
         provides=["shots_classified"],
-        tags=["shot type", "wide shot", "close up", "medium shot", "shot size",
-              "framing", "camera angle", "categorize shots"],
+        tags=[
+            "shot type",
+            "wide shot",
+            "close up",
+            "medium shot",
+            "shot size",
+            "framing",
+            "camera angle",
+            "categorize shots",
+        ],
     )
     def classify_shots(
         video_path: str,
@@ -58,8 +73,15 @@ def register_scene_tools(registry: ToolRegistry) -> None:
         domain="scene",
         requires=["scenes_detected"],
         provides=["rough_cut_created"],
-        tags=["auto edit", "assembly edit", "first cut", "rough assembly",
-              "auto assemble", "string out", "selects reel"],
+        tags=[
+            "auto edit",
+            "assembly edit",
+            "first cut",
+            "rough assembly",
+            "auto assemble",
+            "string out",
+            "selects reel",
+        ],
     )
     def create_rough_cut(
         scenes_json: str,

@@ -321,9 +321,7 @@ class ToolRegistry:
 
         func = info.get("func")
         if func is None:
-            raise RegistryError(
-                f"Tool '{tool_name}' is a stub — plugin not yet loaded"
-            )
+            raise RegistryError(f"Tool '{tool_name}' is a stub — plugin not yet loaded")
 
         params = _extract_params(func)
         docstring = inspect.getdoc(func) or ""
@@ -349,15 +347,11 @@ class ToolRegistry:
 
         func = info.get("func")
         if func is None:
-            raise RegistryError(
-                f"Tool '{tool_name}' is a stub — plugin not yet loaded"
-            )
+            raise RegistryError(f"Tool '{tool_name}' is a stub — plugin not yet loaded")
 
         # Check prerequisites
         if session_state is not None:
-            missing = self._dep_graph.check_prerequisites(
-                resolved, session_state.provisions
-            )
+            missing = self._dep_graph.check_prerequisites(resolved, session_state.provisions)
             if missing:
                 raise PrerequisiteError(
                     f"Prerequisites not met for '{tool_name}': missing {missing}"

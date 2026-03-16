@@ -36,18 +36,20 @@ def list_timeline_clips(xges_path: str) -> list[dict]:
 
     clips = []
     for clip in model._clip_index.values():
-        clips.append({
-            "clip_id": clip.clip_id,
-            "name": clip.name,
-            "start_ns": clip.start_ns,
-            "duration_ns": clip.duration_ns,
-            "end_ns": clip.end_ns,
-            "inpoint_ns": clip.inpoint_ns,
-            "layer": clip.layer_index,
-            "has_video": clip.has_video,
-            "has_audio": clip.has_audio,
-            "effects": list(clip.effects),
-        })
+        clips.append(
+            {
+                "clip_id": clip.clip_id,
+                "name": clip.name,
+                "start_ns": clip.start_ns,
+                "duration_ns": clip.duration_ns,
+                "end_ns": clip.end_ns,
+                "inpoint_ns": clip.inpoint_ns,
+                "layer": clip.layer_index,
+                "has_video": clip.has_video,
+                "has_audio": clip.has_audio,
+                "effects": list(clip.effects),
+            }
+        )
 
     clips.sort(key=lambda c: (c["start_ns"], c["layer"]))
     return clips

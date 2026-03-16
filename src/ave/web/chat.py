@@ -185,9 +185,7 @@ class ChatSession:
         elif event.type == "content_block_start":
             cb = getattr(event, "content_block", None)
             if cb is not None and cb.type == "tool_use":
-                tool_calls.append(
-                    {"id": cb.id, "name": cb.name, "input": {}}
-                )
+                tool_calls.append({"id": cb.id, "name": cb.name, "input": {}})
                 await ws.send_json(format_tool_start(cb.name, cb.id))
 
     def _get_tools_json(self) -> list[dict]:

@@ -33,7 +33,9 @@ class TestWhisperAlignerConfig:
         assert cfg.dtw_backend == "numpy"
 
     def test_custom_values(self):
-        cfg = WhisperAlignerConfig(model_size="medium", head_selection="manual", dtw_backend="scipy")
+        cfg = WhisperAlignerConfig(
+            model_size="medium", head_selection="manual", dtw_backend="scipy"
+        )
         assert cfg.model_size == "medium"
         assert cfg.head_selection == "manual"
         assert cfg.dtw_backend == "scipy"

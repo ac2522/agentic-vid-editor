@@ -55,11 +55,7 @@ class TestPluginManifest:
     def test_manifest_is_frozen(self, tmp_path):
         manifest = tmp_path / "plugin.yaml"
         manifest.write_text(
-            "name: frozen\n"
-            "description: test\n"
-            "version: 1.0.0\n"
-            "domain: test\n"
-            "tools: []\n"
+            "name: frozen\ndescription: test\nversion: 1.0.0\ndomain: test\ntools: []\n"
         )
         result = parse_manifest(manifest)
         with pytest.raises(AttributeError):
@@ -68,11 +64,7 @@ class TestPluginManifest:
     def test_parse_manifest_sets_path(self, tmp_path):
         manifest = tmp_path / "plugin.yaml"
         manifest.write_text(
-            "name: pathed\n"
-            "description: test\n"
-            "version: 1.0.0\n"
-            "domain: test\n"
-            "tools: []\n"
+            "name: pathed\ndescription: test\nversion: 1.0.0\ndomain: test\ntools: []\n"
         )
         result = parse_manifest(manifest)
         assert result.path == tmp_path

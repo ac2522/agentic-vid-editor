@@ -1,6 +1,5 @@
 """Tests for proxy-first workflow."""
 
-
 import pytest
 
 from ave.tools.proxy import (

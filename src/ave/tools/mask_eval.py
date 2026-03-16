@@ -24,9 +24,7 @@ class MaskEvaluator:
     def __init__(self, quality_threshold: float = 0.6) -> None:
         self._threshold = quality_threshold
 
-    def evaluate(
-        self, masks: list[SegmentationMask], frames: list[np.ndarray]
-    ) -> MaskQuality:
+    def evaluate(self, masks: list[SegmentationMask], frames: list[np.ndarray]) -> MaskQuality:
         if not masks:
             return MaskQuality(
                 edge_smoothness=0.0,

@@ -89,20 +89,21 @@ def _make_test_session() -> EditingSession:
     s._transition_graph = None
     s._lock = threading.Lock()
 
-    @s._registry.tool(domain="editing", requires=[], provides=["clip_trimmed"],
-                       modifies_timeline=True)
+    @s._registry.tool(
+        domain="editing", requires=[], provides=["clip_trimmed"], modifies_timeline=True
+    )
     def trim(in_ns: int, out_ns: int) -> dict:
         """Trim a clip."""
         return {"in_ns": in_ns, "out_ns": out_ns}
 
-    @s._registry.tool(domain="color", requires=[], provides=["color_graded"],
-                       modifies_timeline=True)
+    @s._registry.tool(
+        domain="color", requires=[], provides=["color_graded"], modifies_timeline=True
+    )
     def color_grade(warmth: float) -> dict:
         """Apply color grading."""
         return {"warmth": warmth}
 
-    @s._registry.tool(domain="audio", requires=[], provides=["volume_set"],
-                       modifies_timeline=True)
+    @s._registry.tool(domain="audio", requires=[], provides=["volume_set"], modifies_timeline=True)
     def volume(level_db: float) -> dict:
         """Set audio volume."""
         return {"level_db": level_db}
@@ -228,16 +229,20 @@ class TestRESTAPITimelineIntegration:
         from ave.web.api import get_assets_response
 
         registry_path = tmp_path / "registry.json"
-        registry_path.write_text(json.dumps([
-            {
-                "asset_id": "asset_001",
-                "original_path": "/media/interview.mov",
-                "duration_seconds": 120.5,
-                "width": 1920,
-                "height": 1080,
-                "original_fps": 23.976,
-            }
-        ]))
+        registry_path.write_text(
+            json.dumps(
+                [
+                    {
+                        "asset_id": "asset_001",
+                        "original_path": "/media/interview.mov",
+                        "duration_seconds": 120.5,
+                        "width": 1920,
+                        "height": 1080,
+                        "original_fps": 23.976,
+                    }
+                ]
+            )
+        )
 
         response = get_assets_response(registry_path)
         assert len(response["assets"]) == 1
@@ -340,17 +345,13 @@ class TestChatSessionOrchestrator:
     def test_orchestrator_handle_search(self, chat_setup):
         """Verify orchestrator.handle_tool_call works through the ChatSession path."""
         orchestrator, _ = chat_setup
-        result = orchestrator.handle_tool_call(
-            "search_tools", {"query": "trim"}
-        )
+        result = orchestrator.handle_tool_call("search_tools", {"query": "trim"})
         assert "trim" in result
         assert "editing" in result
 
     def test_orchestrator_handle_schema(self, chat_setup):
         orchestrator, _ = chat_setup
-        result = orchestrator.handle_tool_call(
-            "get_tool_schema", {"tool_name": "trim"}
-        )
+        result = orchestrator.handle_tool_call("get_tool_schema", {"tool_name": "trim"})
         assert "in_ns" in result
         assert "out_ns" in result
 

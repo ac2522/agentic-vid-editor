@@ -38,9 +38,7 @@ class SamBackend:
         self._model_size = model_size
         self._version = version  # "3", "2", or "auto" (prefer 3)
 
-    def segment_frame(
-        self, frame: np.ndarray, prompts: list[SegmentPrompt]
-    ) -> SegmentationMask:
+    def segment_frame(self, frame: np.ndarray, prompts: list[SegmentPrompt]) -> SegmentationMask:
         h, w = frame.shape[:2]
         mask = np.zeros((h, w), dtype=np.float32)
         mask[h // 4 : 3 * h // 4, w // 4 : 3 * w // 4] = 1.0

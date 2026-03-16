@@ -17,8 +17,15 @@ class TranscriptEditError(Exception):
 
 # Default filler words to detect
 DEFAULT_FILLERS = {
-    "um", "uh", "er", "ah", "like", "you know",
-    "basically", "literally", "actually",
+    "um",
+    "uh",
+    "er",
+    "ah",
+    "like",
+    "you know",
+    "basically",
+    "literally",
+    "actually",
 }
 
 
@@ -161,7 +168,9 @@ def find_word_range(
             end_idx = i
 
     if end_idx is None:
-        raise TranscriptEditError(f"End word '{end_word}' not found after '{start_word}' in transcript")
+        raise TranscriptEditError(
+            f"End word '{end_word}' not found after '{start_word}' in transcript"
+        )
 
     start_ns = seconds_to_ns(all_words[start_idx][0]["start"])
     end_ns = seconds_to_ns(all_words[end_idx][0]["end"])

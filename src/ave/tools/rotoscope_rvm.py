@@ -20,9 +20,7 @@ from ave.tools.rotoscope import (
 class RvmBackend:
     """Robust Video Matting backend (stub for testing)."""
 
-    def segment_frame(
-        self, frame: np.ndarray, prompts: list[SegmentPrompt]
-    ) -> SegmentationMask:
+    def segment_frame(self, frame: np.ndarray, prompts: list[SegmentPrompt]) -> SegmentationMask:
         h, w = frame.shape[:2]
         # Soft alpha matte — center region with gradual falloff
         mask = np.zeros((h, w), dtype=np.float32)

@@ -12,9 +12,7 @@ def register_research_tools(registry: ToolRegistry) -> None:
         domain="research",
         tags=["web", "search", "forum", "technique", "lookup", "internet"],
     )
-    def web_search(
-        query: str, sources: list[str] | None = None
-    ) -> dict:
+    def web_search(query: str, sources: list[str] | None = None) -> dict:
         """Search the web for video editing techniques and information.
 
         Args:

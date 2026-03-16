@@ -13,9 +13,7 @@ class TestSamBackendProtocol:
 
         backend: RotoscopeBackend = SamBackend(model_size="tiny")
         frame = np.zeros((480, 640, 3), dtype=np.uint8)
-        mask = backend.segment_frame(
-            frame, [SegmentPrompt(kind="point", value=(320, 240))]
-        )
+        mask = backend.segment_frame(frame, [SegmentPrompt(kind="point", value=(320, 240))])
         assert mask.mask.shape == (480, 640)
         assert 0.0 <= mask.confidence <= 1.0
 

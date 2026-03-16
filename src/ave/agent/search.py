@@ -126,9 +126,7 @@ class ToolSearchEngine:
         for term, freq in df.items():
             self._idf[term] = math.log((n - freq + 0.5) / (freq + 0.5) + 1)
 
-    def search(
-        self, query: str, domain: str | None = None, limit: int = 10
-    ) -> list[SearchHit]:
+    def search(self, query: str, domain: str | None = None, limit: int = 10) -> list[SearchHit]:
         """Search indexed tools using BM25 scoring.
 
         Optional domain filter. Returns up to limit results sorted by score.

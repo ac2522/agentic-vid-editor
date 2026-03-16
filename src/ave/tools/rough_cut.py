@@ -121,9 +121,7 @@ def compute_rough_cut(params: RoughCutParams) -> list[ClipPlacement]:
     num_scenes = len(params.scenes)
     for idx in params.selected_indices:
         if idx < 0 or idx >= num_scenes:
-            raise RoughCutError(
-                f"Scene index {idx} out of range [0, {num_scenes})"
-            )
+            raise RoughCutError(f"Scene index {idx} out of range [0, {num_scenes})")
 
     # Determine clip order
     if params.order == "chronological":

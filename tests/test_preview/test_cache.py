@@ -105,12 +105,14 @@ class TestCacheInvalidation:
     def test_cache_invalidate_range(self, tmp_path: Path):
         """Invalidate all segments overlapping a time range."""
         cache = SegmentCache(tmp_path / "cache")
-        cache.register_segments([
-            (0, 0, 1_000_000_000),
-            (1, 1_000_000_000, 2_000_000_000),
-            (2, 2_000_000_000, 3_000_000_000),
-            (3, 3_000_000_000, 4_000_000_000),
-        ])
+        cache.register_segments(
+            [
+                (0, 0, 1_000_000_000),
+                (1, 1_000_000_000, 2_000_000_000),
+                (2, 2_000_000_000, 3_000_000_000),
+                (3, 3_000_000_000, 4_000_000_000),
+            ]
+        )
         # Mark all rendering then clean (with dummy files)
         for i in range(4):
             cache.mark_rendering(i)
@@ -130,10 +132,12 @@ class TestCacheInvalidation:
     def test_cache_invalidate_all(self, tmp_path: Path):
         """Invalidate all segments."""
         cache = SegmentCache(tmp_path / "cache")
-        cache.register_segments([
-            (0, 0, 1_000_000_000),
-            (1, 1_000_000_000, 2_000_000_000),
-        ])
+        cache.register_segments(
+            [
+                (0, 0, 1_000_000_000),
+                (1, 1_000_000_000, 2_000_000_000),
+            ]
+        )
         cache.mark_rendering(0)
         cache.invalidate_all()
         assert cache.get_state(0) == SegmentState.DIRTY
@@ -144,11 +148,13 @@ class TestCacheDirtySegments:
     def test_cache_get_dirty_segments(self, tmp_path: Path):
         """Returns list of DIRTY segments sorted by index (priority)."""
         cache = SegmentCache(tmp_path / "cache")
-        cache.register_segments([
-            (0, 0, 1_000_000_000),
-            (1, 1_000_000_000, 2_000_000_000),
-            (2, 2_000_000_000, 3_000_000_000),
-        ])
+        cache.register_segments(
+            [
+                (0, 0, 1_000_000_000),
+                (1, 1_000_000_000, 2_000_000_000),
+                (2, 2_000_000_000, 3_000_000_000),
+            ]
+        )
         cache.mark_rendering(1)
 
         dirty = cache.get_dirty_segments()
@@ -159,12 +165,14 @@ class TestCacheDirtySegments:
     def test_cache_get_dirty_segments_viewport_priority(self, tmp_path: Path):
         """Segments overlapping viewport range returned first."""
         cache = SegmentCache(tmp_path / "cache")
-        cache.register_segments([
-            (0, 0, 1_000_000_000),
-            (1, 1_000_000_000, 2_000_000_000),
-            (2, 2_000_000_000, 3_000_000_000),
-            (3, 3_000_000_000, 4_000_000_000),
-        ])
+        cache.register_segments(
+            [
+                (0, 0, 1_000_000_000),
+                (1, 1_000_000_000, 2_000_000_000),
+                (2, 2_000_000_000, 3_000_000_000),
+                (3, 3_000_000_000, 4_000_000_000),
+            ]
+        )
 
         # Viewport covers segments 2 and 3
         dirty = cache.get_dirty_segments(
@@ -206,11 +214,13 @@ class TestCacheSegmentCount:
         """Reports total and per-state counts."""
         cache_dir = tmp_path / "cache"
         cache = SegmentCache(cache_dir)
-        cache.register_segments([
-            (0, 0, 1_000_000_000),
-            (1, 1_000_000_000, 2_000_000_000),
-            (2, 2_000_000_000, 3_000_000_000),
-        ])
+        cache.register_segments(
+            [
+                (0, 0, 1_000_000_000),
+                (1, 1_000_000_000, 2_000_000_000),
+                (2, 2_000_000_000, 3_000_000_000),
+            ]
+        )
         cache.mark_rendering(1)
         f = cache_dir / "seg_2.mp4"
         f.write_bytes(b"data")
@@ -226,11 +236,13 @@ class TestCachePersistence:
         """Save cache state to JSON, reload, state preserved."""
         cache_dir = tmp_path / "cache"
         cache = SegmentCache(cache_dir, timeline_id="tl_42")
-        cache.register_segments([
-            (0, 0, 1_000_000_000),
-            (1, 1_000_000_000, 2_000_000_000),
-            (2, 2_000_000_000, 3_000_000_000),
-        ])
+        cache.register_segments(
+            [
+                (0, 0, 1_000_000_000),
+                (1, 1_000_000_000, 2_000_000_000),
+                (2, 2_000_000_000, 3_000_000_000),
+            ]
+        )
         cache.mark_rendering(1)
         f = cache_dir / "seg_2.mp4"
         f.write_bytes(b"data")

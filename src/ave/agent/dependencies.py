@@ -36,7 +36,9 @@ class DependencyGraph:
             provides=list(provides),
         )
 
-    def check_prerequisites(self, tool_name: str, current_state: set[str] | frozenset[str]) -> list[str]:
+    def check_prerequisites(
+        self, tool_name: str, current_state: set[str] | frozenset[str]
+    ) -> list[str]:
         """Returns list of missing prerequisites. Empty = all met."""
         dep = self._deps.get(tool_name)
         if dep is None:

@@ -298,8 +298,7 @@ class TestPatternConsistency:
         from pathlib import Path
 
         source = Path(
-            "/home/zaia/Development/agentic-vid-editor"
-            "/src/ave/tools/compositing_ops.py"
+            "/home/zaia/Development/agentic-vid-editor/src/ave/tools/compositing_ops.py"
         ).read_text()
         tree = ast.parse(source)
 

@@ -120,9 +120,7 @@ class ModelManager:
 
         # Ask consent
         if not self._consent(info):
-            raise RuntimeError(
-                f"Download consent denied for {info.name} ({info.size_human})"
-            )
+            raise RuntimeError(f"Download consent denied for {info.name} ({info.size_human})")
 
         # Download
         return self._download(info, model_id)

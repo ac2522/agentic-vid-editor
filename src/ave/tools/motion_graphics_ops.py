@@ -81,15 +81,9 @@ def apply_text_overlay(
     timeline.set_effect_property(
         clip_id, effect_id, "font-desc", f"{params.font_family} {params.font_size}"
     )
-    timeline.set_effect_property(
-        clip_id, effect_id, "halignment", _HALIGN_MAP[params.position]
-    )
-    timeline.set_effect_property(
-        clip_id, effect_id, "valignment", _VALIGN_MAP[params.position]
-    )
-    timeline.set_effect_property(
-        clip_id, effect_id, "color", rgba_to_argb_uint32(params.color)
-    )
+    timeline.set_effect_property(clip_id, effect_id, "halignment", _HALIGN_MAP[params.position])
+    timeline.set_effect_property(clip_id, effect_id, "valignment", _VALIGN_MAP[params.position])
+    timeline.set_effect_property(clip_id, effect_id, "color", rgba_to_argb_uint32(params.color))
 
     if params.bg_color is not None:
         timeline.set_effect_property(clip_id, effect_id, "shaded-background", True)
@@ -153,9 +147,7 @@ def _apply_title_card_impl(
 
     # Set title text and font via child properties
     title_clip.set_child_property("text", params.text)
-    title_clip.set_child_property(
-        "font-desc", f"{params.font_family} {params.font_size}"
-    )
+    title_clip.set_child_property("font-desc", f"{params.font_family} {params.font_size}")
     title_clip.set_child_property("halignment", _HALIGN_MAP[params.position])
     title_clip.set_child_property("valignment", _VALIGN_MAP[params.position])
     title_clip.set_child_property("color", rgba_to_argb_uint32(params.color))

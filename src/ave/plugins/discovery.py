@@ -41,15 +41,10 @@ def parse_manifest(manifest_path: Path) -> PluginManifest:
 
     for field_name in _REQUIRED_FIELDS:
         if field_name not in data:
-            raise ValueError(
-                f"plugin.yaml missing required field: {field_name}"
-            )
+            raise ValueError(f"plugin.yaml missing required field: {field_name}")
 
     tools_raw = data.get("tools", [])
-    tools = tuple(
-        ToolStub(name=t["name"], summary=t.get("summary", ""))
-        for t in tools_raw
-    )
+    tools = tuple(ToolStub(name=t["name"], summary=t.get("summary", "")) for t in tools_raw)
 
     requires = data.get("requires", {})
     return PluginManifest(

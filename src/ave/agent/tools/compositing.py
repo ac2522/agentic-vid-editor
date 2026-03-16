@@ -12,8 +12,15 @@ def register_compositing_tools(registry: ToolRegistry) -> None:
         domain="compositing",
         requires=["timeline_loaded", "clip_exists"],
         provides=["layer_order_set"],
-        tags=["z-order", "stack order", "layer stack", "bring to front",
-              "send to back", "arrange layers", "compositing order"],
+        tags=[
+            "z-order",
+            "stack order",
+            "layer stack",
+            "bring to front",
+            "send to back",
+            "arrange layers",
+            "compositing order",
+        ],
         modifies_timeline=True,
     )
     def set_layer_order(layers: list):
@@ -26,8 +33,16 @@ def register_compositing_tools(registry: ToolRegistry) -> None:
         domain="compositing",
         requires=["timeline_loaded", "clip_exists"],
         provides=["blend_mode_applied"],
-        tags=["blend", "multiply", "screen", "overlay", "mix layers",
-              "composite mode", "layer blend", "blending"],
+        tags=[
+            "blend",
+            "multiply",
+            "screen",
+            "overlay",
+            "mix layers",
+            "composite mode",
+            "layer blend",
+            "blending",
+        ],
         modifies_timeline=True,
     )
     def apply_blend_mode(blend_mode: str):
@@ -41,8 +56,16 @@ def register_compositing_tools(registry: ToolRegistry) -> None:
         domain="compositing",
         requires=["timeline_loaded", "clip_exists"],
         provides=["clip_position_set"],
-        tags=["move clip", "position", "picture in picture", "PiP", "offset",
-              "place on canvas", "x y position", "reposition"],
+        tags=[
+            "move clip",
+            "position",
+            "picture in picture",
+            "PiP",
+            "offset",
+            "place on canvas",
+            "x y position",
+            "reposition",
+        ],
         modifies_timeline=True,
     )
     def set_clip_position(x: int, y: int, width: int = 0, height: int = 0):
@@ -58,8 +81,15 @@ def register_compositing_tools(registry: ToolRegistry) -> None:
         domain="compositing",
         requires=["timeline_loaded", "clip_exists"],
         provides=["clip_alpha_set"],
-        tags=["opacity", "transparency", "see through", "transparent",
-              "fade layer", "ghost", "semi-transparent"],
+        tags=[
+            "opacity",
+            "transparency",
+            "see through",
+            "transparent",
+            "fade layer",
+            "ghost",
+            "semi-transparent",
+        ],
         modifies_timeline=True,
     )
     def set_clip_alpha(alpha: float):

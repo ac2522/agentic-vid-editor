@@ -12,9 +12,24 @@ def register_color_tools(registry: ToolRegistry) -> None:
         domain="color",
         requires=["timeline_loaded", "clip_exists"],
         provides=["color_graded"],
-        tags=["colour", "lift gamma gain", "color correction", "tint", "warm",
-              "cool", "look", "mood", "cinematic", "brighten", "darken",
-              "brighter", "darker", "warm up", "cool down", "color balance"],
+        tags=[
+            "colour",
+            "lift gamma gain",
+            "color correction",
+            "tint",
+            "warm",
+            "cool",
+            "look",
+            "mood",
+            "cinematic",
+            "brighten",
+            "darken",
+            "brighter",
+            "darker",
+            "warm up",
+            "cool down",
+            "color balance",
+        ],
         modifies_timeline=True,
     )
     def color_grade(
@@ -47,8 +62,14 @@ def register_color_tools(registry: ToolRegistry) -> None:
         domain="color",
         requires=["timeline_loaded", "clip_exists"],
         provides=["cdl_applied"],
-        tags=["ASC CDL", "slope offset power", "color decision list",
-              "primary correction", "printer lights", "colour correction"],
+        tags=[
+            "ASC CDL",
+            "slope offset power",
+            "color decision list",
+            "primary correction",
+            "printer lights",
+            "colour correction",
+        ],
         modifies_timeline=True,
     )
     def cdl(
@@ -77,8 +98,14 @@ def register_color_tools(registry: ToolRegistry) -> None:
         domain="color",
         requires=["media_ingested"],
         provides=["lut_parsed"],
-        tags=["LUT", "lookup table", "cube file", "color transform",
-              "film emulation", "log to rec709"],
+        tags=[
+            "LUT",
+            "lookup table",
+            "cube file",
+            "color transform",
+            "film emulation",
+            "log to rec709",
+        ],
     )
     def lut_parse(path: str):
         """Parse a .cube LUT file and return its data."""

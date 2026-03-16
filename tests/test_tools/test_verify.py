@@ -23,6 +23,7 @@ from tests.conftest import requires_ffmpeg
 # EditIntent & VerificationResult creation
 # ---------------------------------------------------------------------------
 
+
 class TestEditIntent:
     def test_creation(self):
         intent = EditIntent(
@@ -62,7 +63,11 @@ class TestVerificationResult:
     def test_frozen(self):
         intent = EditIntent(tool_name="x", description="x", expected_changes={})
         result = VerificationResult(
-            passed=False, intent=intent, actual_metrics={}, discrepancies=["bad"], confidence=0.5,
+            passed=False,
+            intent=intent,
+            actual_metrics={},
+            discrepancies=["bad"],
+            confidence=0.5,
         )
         with pytest.raises(AttributeError):
             result.passed = True  # type: ignore[misc]
@@ -71,6 +76,7 @@ class TestVerificationResult:
 # ---------------------------------------------------------------------------
 # compare_metrics
 # ---------------------------------------------------------------------------
+
 
 class TestCompareMetrics:
     def test_exact_match_passes(self):
@@ -160,6 +166,7 @@ class TestCompareMetrics:
 # ProbeVerifier — protocol conformance
 # ---------------------------------------------------------------------------
 
+
 class TestProbeVerifierProtocol:
     def test_satisfies_verification_backend(self):
         verifier = ProbeVerifier()
@@ -167,6 +174,7 @@ class TestProbeVerifierProtocol:
         assert hasattr(verifier, "verify")
         # Check signature compatibility
         import inspect
+
         sig = inspect.signature(verifier.verify)
         params = list(sig.parameters.keys())
         assert "intent" in params
@@ -177,6 +185,7 @@ class TestProbeVerifierProtocol:
 # ProbeVerifier — ffprobe integration
 # ---------------------------------------------------------------------------
 
+
 @requires_ffmpeg
 class TestProbeVerifier:
     def _generate_test_clip(self, path: Path, duration: float = 2.0) -> Path:
@@ -184,14 +193,27 @@ class TestProbeVerifier:
         out = path / "test.mp4"
         subprocess.run(
             [
-                "ffmpeg", "-y",
-                "-f", "lavfi", "-i", f"testsrc=duration={duration}:size=320x240:rate=24",
-                "-f", "lavfi", "-i", f"sine=frequency=440:duration={duration}",
-                "-c:v", "libx264", "-preset", "ultrafast",
-                "-c:a", "aac", "-shortest",
+                "ffmpeg",
+                "-y",
+                "-f",
+                "lavfi",
+                "-i",
+                f"testsrc=duration={duration}:size=320x240:rate=24",
+                "-f",
+                "lavfi",
+                "-i",
+                f"sine=frequency=440:duration={duration}",
+                "-c:v",
+                "libx264",
+                "-preset",
+                "ultrafast",
+                "-c:a",
+                "aac",
+                "-shortest",
                 str(out),
             ],
-            capture_output=True, check=True,
+            capture_output=True,
+            check=True,
         )
         return out
 
@@ -242,6 +264,7 @@ class TestProbeVerifier:
 # VerifiedSession
 # ---------------------------------------------------------------------------
 
+
 def _make_session() -> EditingSession:
     """Create a minimal EditingSession without loading tools."""
     s = EditingSession.__new__(EditingSession)
@@ -277,7 +300,11 @@ class TestVerifiedSession:
         mock_verifier = MagicMock()
         intent = EditIntent(tool_name="trim", description="t", expected_changes={})
         expected_result = VerificationResult(
-            passed=True, intent=intent, actual_metrics={}, discrepancies=[], confidence=1.0,
+            passed=True,
+            intent=intent,
+            actual_metrics={},
+            discrepancies=[],
+            confidence=1.0,
         )
         mock_verifier.verify.return_value = expected_result
         vs = VerifiedSession(session, verifier=mock_verifier)
@@ -310,7 +337,11 @@ class TestVerifiedSession:
         mock_verifier = MagicMock()
         intent = EditIntent(tool_name="trim", description="t", expected_changes={})
         mock_verifier.verify.return_value = VerificationResult(
-            passed=True, intent=intent, actual_metrics={}, discrepancies=[], confidence=1.0,
+            passed=True,
+            intent=intent,
+            actual_metrics={},
+            discrepancies=[],
+            confidence=1.0,
         )
         vs = VerifiedSession(session, verifier=mock_verifier)
         vs.call_tool("trim", {})

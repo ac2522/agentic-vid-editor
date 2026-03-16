@@ -27,11 +27,13 @@ from ave.preview.cache import SegmentCache  # noqa: E402
 def cache(tmp_path: Path) -> SegmentCache:
     """Create a SegmentCache with a few registered segments."""
     c = SegmentCache(tmp_path / "cache")
-    c.register_segments([
-        (0, 0, 5_000_000_000),
-        (1, 5_000_000_000, 10_000_000_000),
-        (2, 10_000_000_000, 15_000_000_000),
-    ])
+    c.register_segments(
+        [
+            (0, 0, 5_000_000_000),
+            (1, 5_000_000_000, 10_000_000_000),
+            (2, 10_000_000_000, 15_000_000_000),
+        ]
+    )
     return c
 
 
@@ -160,11 +162,13 @@ async def test_ws_invalid_message(aiohttp_client, app):
 async def test_ws_playback_state(aiohttp_client, app):
     client = await aiohttp_client(app)
     async with client.ws_connect("/ws") as ws:
-        await ws.send_json({
-            "type": "playback",
-            "state": "playing",
-            "position_ns": 0,
-        })
+        await ws.send_json(
+            {
+                "type": "playback",
+                "state": "playing",
+                "position_ns": 0,
+            }
+        )
         msg = await ws.receive_json()
         assert msg["type"] == "playback_ack"
         assert msg["state"] == "playing"

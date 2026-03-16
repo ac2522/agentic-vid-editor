@@ -38,8 +38,7 @@ def _import_ocio():
         return OCIO
     except ImportError:
         raise ImportError(
-            "Missing optional dependency 'PyOpenColorIO'. "
-            "Install with: pip install opencolorio"
+            "Missing optional dependency 'PyOpenColorIO'. Install with: pip install opencolorio"
         ) from None
 
 

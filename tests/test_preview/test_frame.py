@@ -12,6 +12,7 @@ from tests.conftest import FIXTURES_DIR, requires_ffmpeg
 # Fixture helpers
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture(scope="module")
 def clip_path() -> Path:
     """Path to 5-second 1080p24 test clip."""
@@ -26,6 +27,7 @@ def clip_path() -> Path:
 # ---------------------------------------------------------------------------
 # Pure logic tests — compute_frame_timecode
 # ---------------------------------------------------------------------------
+
 
 class TestComputeFrameTimecode:
     def test_compute_frame_timecode(self):
@@ -49,6 +51,7 @@ class TestComputeFrameTimecode:
 # ---------------------------------------------------------------------------
 # FFmpeg integration tests — extract_frame
 # ---------------------------------------------------------------------------
+
 
 @requires_ffmpeg
 class TestExtractFrame:

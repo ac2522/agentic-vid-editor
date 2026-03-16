@@ -29,6 +29,7 @@ def full_registry():
 
 # ---- 1. Editing domain ----
 
+
 def test_editing_tools_registered(full_registry):
     """Editing domain has: trim, split, concatenate, speed, transition (5 tools)."""
     results = full_registry.search_tools(domain="editing")
@@ -38,6 +39,7 @@ def test_editing_tools_registered(full_registry):
 
 # ---- 2. Audio domain ----
 
+
 def test_audio_tools_registered(full_registry):
     """Audio domain has: volume, fade, normalize (3 tools)."""
     results = full_registry.search_tools(domain="audio")
@@ -46,6 +48,7 @@ def test_audio_tools_registered(full_registry):
 
 
 # ---- 3. Color domain ----
+
 
 def test_color_tools_registered(full_registry):
     """Color domain has: color_grade, cdl, lut_parse (3 minimum)."""
@@ -57,6 +60,7 @@ def test_color_tools_registered(full_registry):
 
 # ---- 4. Transcription domain ----
 
+
 def test_transcription_tools_registered(full_registry):
     """Transcription domain has: search_transcript, find_fillers, text_cut, text_keep (4+ tools)."""
     results = full_registry.search_tools(domain="transcription")
@@ -67,14 +71,22 @@ def test_transcription_tools_registered(full_registry):
 
 # ---- 5. Render domain ----
 
+
 def test_render_tools_registered(full_registry):
     """Render domain has: render_proxy, render_segment, compute_segments, render_with_preset, list_render_presets (5 tools)."""
     results = full_registry.search_tools(domain="render")
     names = {t.name for t in results}
-    assert names == {"render_proxy", "render_segment", "compute_segments", "render_with_preset", "list_render_presets"}
+    assert names == {
+        "render_proxy",
+        "render_segment",
+        "compute_segments",
+        "render_with_preset",
+        "list_render_presets",
+    }
 
 
 # ---- 6. Project domain ----
+
 
 def test_project_tools_registered(full_registry):
     """Project domain has: probe_media, ingest_media (2+ tools)."""
@@ -86,6 +98,7 @@ def test_project_tools_registered(full_registry):
 
 # ---- 7. All domains listed ----
 
+
 def test_all_domains_listed(full_registry):
     """list_domains() returns all 6 domains."""
     domains = full_registry.list_domains()
@@ -95,12 +108,14 @@ def test_all_domains_listed(full_registry):
 
 # ---- 8. Total tool count ----
 
+
 def test_total_tool_count(full_registry):
     """Total tool count >= 20."""
     assert full_registry.tool_count >= 20
 
 
 # ---- 9. Search across domains ----
+
 
 def test_search_across_domains(full_registry):
     """search("trim") returns editing trim tool."""
@@ -114,6 +129,7 @@ def test_search_across_domains(full_registry):
 
 # ---- 10. Search within domain ----
 
+
 def test_search_within_domain(full_registry):
     """search(domain="audio") returns only audio tools."""
     results = full_registry.search_tools(domain="audio")
@@ -124,6 +140,7 @@ def test_search_within_domain(full_registry):
 
 # ---- 11. All tools have descriptions ----
 
+
 def test_all_tools_have_descriptions(full_registry):
     """Every tool has non-empty description."""
     all_tools = full_registry.search_tools()
@@ -133,6 +150,7 @@ def test_all_tools_have_descriptions(full_registry):
 
 
 # ---- 12. All tools have schemas ----
+
 
 def test_all_tools_have_schemas(full_registry):
     """Every tool returns valid ToolSchema with params."""
@@ -150,15 +168,19 @@ def test_all_tools_have_schemas(full_registry):
 
 # ---- 13. Editing trim callable ----
 
+
 def test_editing_trim_callable(full_registry):
     """call_tool("trim", {...}) with valid params returns TrimParams."""
     from ave.tools.edit import TrimParams
 
-    result = full_registry.call_tool("trim", {
-        "clip_duration_ns": 10_000_000_000,
-        "in_ns": 1_000_000_000,
-        "out_ns": 5_000_000_000,
-    })
+    result = full_registry.call_tool(
+        "trim",
+        {
+            "clip_duration_ns": 10_000_000_000,
+            "in_ns": 1_000_000_000,
+            "out_ns": 5_000_000_000,
+        },
+    )
     assert isinstance(result, TrimParams)
     assert result.in_ns == 1_000_000_000
     assert result.out_ns == 5_000_000_000
@@ -166,6 +188,7 @@ def test_editing_trim_callable(full_registry):
 
 
 # ---- 14. Audio volume callable ----
+
 
 def test_audio_volume_callable(full_registry):
     """call_tool("volume", {...}) returns VolumeParams."""
@@ -177,6 +200,7 @@ def test_audio_volume_callable(full_registry):
 
 
 # ---- 15. Tool dependencies set ----
+
 
 def test_tool_dependencies_set(full_registry):
     """Editing tools require 'timeline_loaded', etc."""

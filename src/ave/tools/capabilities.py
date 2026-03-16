@@ -40,7 +40,10 @@ class SystemCapabilities:
             "gpu": (self.gpu_available, "CPU software rendering (slower but functional)"),
             "ges": (self.ges_available, "XGES file manipulation without live GES pipeline"),
             "ffmpeg": (self.ffmpeg_available, "No media processing available"),
-            "whisper": (self.whisper_available, "Transcription unavailable; manual transcript input supported"),
+            "whisper": (
+                self.whisper_available,
+                "Transcription unavailable; manual transcript input supported",
+            ),
         }
         entry = fallbacks.get(capability)
         if entry is None:

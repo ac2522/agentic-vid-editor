@@ -207,8 +207,7 @@ def export_to_format(
 
     if ext not in SUPPORTED_EXPORT_FORMATS:
         raise OTIOExportError(
-            f"Unsupported export format: {ext!r}. "
-            f"Supported: {sorted(SUPPORTED_EXPORT_FORMATS)}"
+            f"Unsupported export format: {ext!r}. Supported: {sorted(SUPPORTED_EXPORT_FORMATS)}"
         )
 
     return export_timeline(timeline_data, output_path, fps)
