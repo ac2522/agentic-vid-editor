@@ -52,6 +52,8 @@ class EditingSession:
         self,
         snapshot_manager: SnapshotManager | None = None,
         transition_graph: ToolTransitionGraph | None = None,
+        plugin_dirs: list[Path] | None = None,
+        skill_dirs: list[Path] | None = None,
     ) -> None:
         self._registry = ToolRegistry()
         self._state = SessionState()
@@ -61,6 +63,25 @@ class EditingSession:
         self._transition_graph = transition_graph
         self._lock = threading.Lock()
         self._load_all_tools()
+
+        # Plugin and skill systems
+        from ave.plugins.loader import PluginLoader
+        from ave.skills.loader import SkillLoader
+
+        self._plugin_loader = PluginLoader(self._registry)
+        self._skill_loader = SkillLoader()
+
+        if plugin_dirs:
+            from ave.plugins.discovery import discover_plugins
+
+            for manifest in discover_plugins(plugin_dirs):
+                self._plugin_loader.register_manifest(manifest)
+
+        if skill_dirs:
+            from ave.skills.discovery import discover_skills
+
+            for meta in discover_skills(skill_dirs):
+                self._skill_loader.register(meta)
 
     def _load_all_tools(self) -> None:
         """Register all domain tools."""
@@ -111,6 +132,17 @@ class EditingSession:
     def search_tools(self, query: str = "", domain: str | None = None):
         """Search for tools by keyword and/or domain."""
         return self._registry.search_tools(query, domain)
+
+    def match_skills(self, intent: str) -> list:
+        """Match user intent against registered skills."""
+        return self._skill_loader.match(intent)
+
+    def load_skill(self, skill_name: str) -> str:
+        """Load full skill body by name."""
+        meta = self._skill_loader.get(skill_name)
+        if meta is None:
+            raise SessionError(f"Unknown skill: {skill_name}")
+        return self._skill_loader.load_body(meta)
 
     def get_tool_schema(self, tool_name: str):
         """Get full parameter schema for a tool."""
