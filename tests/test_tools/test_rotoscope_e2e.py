@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 
 from ave.tools.rotoscope import SegmentPrompt, MaskCorrection
-from ave.tools.rotoscope_sam2 import Sam2Backend
+from ave.tools.rotoscope_sam2 import SamBackend
 from ave.tools.rotoscope_chroma import ChromaKeyBackend
 from ave.tools.mask_eval import MaskEvaluator
 
@@ -13,7 +13,7 @@ from ave.tools.mask_eval import MaskEvaluator
 class TestFeedbackLoop:
     def test_segment_evaluate_refine_cycle(self):
         """Simulate the agent's feedback loop."""
-        backend = Sam2Backend(model_size="tiny")
+        backend = SamBackend(model_size="tiny")
         evaluator = MaskEvaluator(quality_threshold=0.6)
 
         frames = [np.zeros((480, 640, 3), dtype=np.uint8) for _ in range(5)]

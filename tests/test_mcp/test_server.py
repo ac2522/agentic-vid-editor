@@ -25,6 +25,7 @@ class TestMcpServer:
         tool_names = {t.name for t in tools}
         expected = {
             "edit_video",
+            "get_job_status",
             "get_project_state",
             "render_preview",
             "ingest_asset",

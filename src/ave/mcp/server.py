@@ -1,4 +1,4 @@
-"""FastMCP server for AVE — 6 outcome-oriented tools."""
+"""FastMCP server for AVE — 7 outcome-oriented tools."""
 
 from __future__ import annotations
 
@@ -6,6 +6,7 @@ from dataclasses import asdict
 from typing import Any
 
 from ave.agent.session import EditingSession
+from ave.mcp.jobs import JobTracker
 from ave.mcp.types import EditResult, ProjectState, PreviewResult, AssetInfo
 
 try:
@@ -17,17 +18,21 @@ except ImportError:
 def create_mcp_server(
     session: EditingSession | None = None,
 ) -> FastMCP:
-    """Create AVE's MCP server with 6 outcome-oriented tools."""
+    """Create AVE's MCP server with 7 outcome-oriented tools."""
     if FastMCP is None:
         raise ImportError("fastmcp is required: pip install fastmcp")
 
     if session is None:
         session = EditingSession()
 
+    job_tracker = JobTracker()
+
     mcp = FastMCP(
         "ave",
         instructions="Agentic Video Editor — use edit_video for natural "
-        "language editing, or search_tools + call_tool for granular control.",
+        "language editing, or search_tools + call_tool for granular control. "
+        "For long-running operations, edit_video returns a job_id — use "
+        "get_job_status to poll progress.",
     )
 
     @mcp.tool()
@@ -36,18 +41,34 @@ def create_mcp_server(
         handles tool discovery, role-based routing, execution, and
         verification.
 
+        For long-running operations (rotoscoping, research), returns a
+        job_id that can be polled with get_job_status.
+
         Examples:
           edit_video(instruction="remove all filler words")
           edit_video(instruction="add cross dissolve between clips 3 and 4")
         """
-        # TODO: Wire to orchestrator agentic loop
-        return asdict(
-            EditResult(
-                success=False,
-                description=f"Received instruction: {instruction}",
-                error="orchestrator_not_connected",
+        # Acquire orchestrator lock for multi-client safety
+        with session.orchestrator_lock:
+            # TODO: Wire to orchestrator agentic loop
+            return asdict(
+                EditResult(
+                    success=False,
+                    description=f"Received instruction: {instruction}",
+                    error="orchestrator_not_connected",
+                )
             )
-        )
+
+    @mcp.tool()
+    def get_job_status(job_id: str) -> dict:
+        """Check status of a long-running operation.
+
+        Returns job status, progress (0.0-1.0), and result when complete.
+        """
+        job = job_tracker.get(job_id)
+        if job is None:
+            return {"error": f"Unknown job: {job_id}"}
+        return job.to_dict()
 
     @mcp.tool()
     def get_project_state(include: list[str] | None = None) -> dict:

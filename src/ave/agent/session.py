@@ -62,6 +62,7 @@ class EditingSession:
         self._snapshot_manager = snapshot_manager
         self._transition_graph = transition_graph
         self._lock = threading.Lock()
+        self._orchestrator_lock = threading.Lock()
         self._load_all_tools()
 
         # Plugin and skill systems
@@ -124,6 +125,16 @@ class EditingSession:
     @property
     def registry(self) -> ToolRegistry:
         return self._registry
+
+    @property
+    def orchestrator_lock(self) -> threading.Lock:
+        """Lock for serializing entire orchestration runs (e.g., MCP edit_video).
+
+        Use this to wrap multi-step operations that must not interleave
+        with other orchestration runs. The per-call _lock remains for
+        fine-grained snapshot integrity within a single tool call.
+        """
+        return self._orchestrator_lock
 
     @property
     def state(self) -> SessionState:
