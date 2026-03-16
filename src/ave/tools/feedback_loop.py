@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from ave.tools.mask_eval import MaskEvaluator, MaskQuality
+from ave.tools.mask_eval import MaskQuality
 from ave.tools.rotoscope import SegmentationMask
 
 

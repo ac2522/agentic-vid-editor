@@ -11,11 +11,11 @@ from __future__ import annotations
 
 import threading
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from ave.agent.registry import ToolRegistry, PrerequisiteError
+from ave.agent.registry import ToolRegistry
 from ave.agent.dependencies import SessionState
 from ave.agent.transitions import ToolTransitionGraph
 from ave.project.snapshots import SnapshotManager

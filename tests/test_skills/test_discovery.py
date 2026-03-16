@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from ave.skills.discovery import SkillMeta, parse_skill_frontmatter, discover_skills
+from ave.skills.discovery import parse_skill_frontmatter, discover_skills
 
 
 class TestSkillMeta:

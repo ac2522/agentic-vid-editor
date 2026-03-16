@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from ave.tools.mask_eval import MaskQuality, MaskEvaluator
+from ave.tools.mask_eval import MaskEvaluator
 from ave.tools.rotoscope import SegmentationMask
 
 

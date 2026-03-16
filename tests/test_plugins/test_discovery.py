@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from ave.plugins.discovery import PluginManifest, parse_manifest, discover_plugins
+from ave.plugins.discovery import parse_manifest, discover_plugins
 
 
 class TestPluginManifest:

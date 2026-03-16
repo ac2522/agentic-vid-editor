@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import Path
 
 from ave.skills.discovery import SkillMeta
 from ave.skills.loader import SkillLoader

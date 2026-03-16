@@ -5,7 +5,7 @@ from __future__ import annotations
 import importlib.util
 import sys
 
-from ave.agent.registry import ToolRegistry, RegistryError
+from ave.agent.registry import ToolRegistry
 from ave.plugins.discovery import PluginManifest
 
 
