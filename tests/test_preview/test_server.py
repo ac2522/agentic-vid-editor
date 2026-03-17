@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-# pytest-asyncio auto mode so bare async defs are collected as async tests
-import pytest_asyncio  # noqa: F401
-
 import base64
 from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+
+pytest.importorskip("pytest_asyncio")
+import pytest_asyncio  # noqa: F401,E402
 
 aiohttp = pytest.importorskip("aiohttp")
 
