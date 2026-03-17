@@ -6,7 +6,9 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from ave.tools.search_tavily import TavilySearchBackend
+pytest.importorskip("aiohttp")
+
+from ave.tools.search_tavily import TavilySearchBackend  # noqa: E402
 
 
 @pytest.mark.asyncio

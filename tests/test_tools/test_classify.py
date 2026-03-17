@@ -4,18 +4,19 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import numpy as np
 import pytest
 
-from ave.tools.classify import (
+np = pytest.importorskip("numpy")
+
+from ave.tools.classify import (  # noqa: E402
     SHOT_LABELS,
     ClassificationError,
     classify_and_register,
     classify_video,
     load_keyframe_as_array,
 )
-from ave.tools.scene import SceneBoundary
-from ave.tools.vision import SceneTag, VisualAnalysis
+from ave.tools.scene import SceneBoundary  # noqa: E402
+from ave.tools.vision import SceneTag, VisualAnalysis  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
