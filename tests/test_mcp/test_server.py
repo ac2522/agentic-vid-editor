@@ -6,7 +6,9 @@ import asyncio
 
 import pytest
 
-from ave.mcp.server import create_mcp_server
+pytest.importorskip("fastmcp")
+
+from ave.mcp.server import create_mcp_server  # noqa: E402
 
 
 def _call(server, tool_name: str, args: dict | None = None):
