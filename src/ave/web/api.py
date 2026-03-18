@@ -37,13 +37,15 @@ def get_assets_response(registry_path: Path) -> dict:
     assets: list[dict] = []
     for entry in entries:
         asset_id = entry["asset_id"]
-        assets.append({
-            "id": asset_id,
-            "name": Path(entry["original_path"]).name,
-            "duration_ns": int(entry["duration_seconds"] * 1_000_000_000),
-            "resolution": f"{entry['width']}x{entry['height']}",
-            "fps": entry["original_fps"],
-            "thumbnail_url": f"/api/assets/{asset_id}/thumbnail",
-        })
+        assets.append(
+            {
+                "id": asset_id,
+                "name": Path(entry["original_path"]).name,
+                "duration_ns": int(entry["duration_seconds"] * 1_000_000_000),
+                "resolution": f"{entry['width']}x{entry['height']}",
+                "fps": entry["original_fps"],
+                "thumbnail_url": f"/api/assets/{asset_id}/thumbnail",
+            }
+        )
 
     return {"assets": assets}

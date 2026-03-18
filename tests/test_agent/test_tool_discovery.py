@@ -240,8 +240,7 @@ class TestNegativeQueries:
     def test_unrelated_query_returns_empty(self, session, query):
         results = session.search_tools(query)
         assert results == [], (
-            f"Query '{query}' should return no results, got "
-            f"{[r.name for r in results]}"
+            f"Query '{query}' should return no results, got {[r.name for r in results]}"
         )
 
     @pytest.mark.parametrize(
@@ -287,6 +286,5 @@ class TestTopResultRanking:
         results = session.search_tools(query)
         top_3 = [r.name for r in results[:3]]
         assert expected_tool in top_3, (
-            f"Query '{query}' should have '{expected_tool}' in top 3, "
-            f"got {top_3}"
+            f"Query '{query}' should have '{expected_tool}' in top 3, got {top_3}"
         )

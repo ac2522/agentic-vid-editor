@@ -101,9 +101,7 @@ class TestExportToFormatValidation:
         with pytest.raises(OTIOExportError, match="Unsupported export format"):
             export_to_format(sample_timeline_data, Path("/tmp/out.avi"))
 
-    def test_unsupported_format_lists_supported(
-        self, sample_timeline_data: dict
-    ) -> None:
+    def test_unsupported_format_lists_supported(self, sample_timeline_data: dict) -> None:
         with pytest.raises(OTIOExportError, match=r"\.otio"):
             export_to_format(sample_timeline_data, Path("/tmp/out.xyz"))
 
@@ -112,9 +110,7 @@ class TestExportTimelineWithoutOTIO:
     """Test that export_timeline raises a clear error when OTIO is missing."""
 
     @pytest.mark.skipif(_HAS_OTIO, reason="only tests the missing-OTIO path")
-    def test_raises_on_missing_otio(
-        self, sample_timeline_data: dict, tmp_path: Path
-    ) -> None:
+    def test_raises_on_missing_otio(self, sample_timeline_data: dict, tmp_path: Path) -> None:
         with pytest.raises(OTIOExportError, match="not installed"):
             export_timeline(sample_timeline_data, tmp_path / "out.otio")
 
@@ -290,9 +286,7 @@ class TestLayerToOtioTrack:
 class TestExportTimeline:
     """Tests for the main export_timeline function."""
 
-    def test_writes_file(
-        self, sample_timeline_data: dict, tmp_path: Path
-    ) -> None:
+    def test_writes_file(self, sample_timeline_data: dict, tmp_path: Path) -> None:
         out = tmp_path / "test.otio"
         result = export_timeline(sample_timeline_data, out, fps=24.0)
 
@@ -300,9 +294,7 @@ class TestExportTimeline:
         assert out.exists()
         assert out.stat().st_size > 0
 
-    def test_round_trip(
-        self, sample_timeline_data: dict, tmp_path: Path
-    ) -> None:
+    def test_round_trip(self, sample_timeline_data: dict, tmp_path: Path) -> None:
         import opentimelineio as otio
 
         out = tmp_path / "roundtrip.otio"
@@ -327,9 +319,7 @@ class TestExportTimeline:
         assert clips[1].name == "clip2"
         assert clips[1].source_range.duration.value == pytest.approx(120.0)
 
-    def test_creates_parent_dirs(
-        self, sample_timeline_data: dict, tmp_path: Path
-    ) -> None:
+    def test_creates_parent_dirs(self, sample_timeline_data: dict, tmp_path: Path) -> None:
         out = tmp_path / "sub" / "dir" / "out.otio"
         result = export_timeline(sample_timeline_data, out, fps=24.0)
         assert result.exists()
@@ -350,9 +340,7 @@ class TestExportTimeline:
 class TestExportToFormat:
     """Tests for multi-format dispatcher."""
 
-    def test_otio_extension(
-        self, sample_timeline_data: dict, tmp_path: Path
-    ) -> None:
+    def test_otio_extension(self, sample_timeline_data: dict, tmp_path: Path) -> None:
         out = tmp_path / "test.otio"
         result = export_to_format(sample_timeline_data, out, fps=24.0)
         assert result.exists()

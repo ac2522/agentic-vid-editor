@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 
 import pytest
 
@@ -136,8 +135,5 @@ class TestWebSocketChat:
         resp = await ws.receive_json()
         assert resp["type"] == "error"
         # Either "anthropic package not installed" or "Agent not available"
-        assert any(
-            phrase in resp["message"]
-            for phrase in ("anthropic", "Agent not available")
-        )
+        assert any(phrase in resp["message"] for phrase in ("anthropic", "Agent not available"))
         await ws.close()

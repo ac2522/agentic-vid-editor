@@ -82,9 +82,7 @@ class TestComputeSegmentBoundaries:
     def test_compute_segment_boundaries_custom_duration(self):
         from ave.render.segment import compute_segment_boundaries
 
-        segments = compute_segment_boundaries(
-            10 * GST_SECOND, segment_duration_ns=2 * GST_SECOND
-        )
+        segments = compute_segment_boundaries(10 * GST_SECOND, segment_duration_ns=2 * GST_SECOND)
         assert len(segments) == 5
         for i, seg in enumerate(segments):
             assert seg.index == i
@@ -179,9 +177,7 @@ class TestRenderSegment:
         output = tmp_path / "seg_invalid.mp4"
 
         with pytest.raises(SegmentError):
-            render_segment(
-                xges_path, output, start_ns=3 * GST_SECOND, end_ns=3 * GST_SECOND
-            )
+            render_segment(xges_path, output, start_ns=3 * GST_SECOND, end_ns=3 * GST_SECOND)
 
     def test_render_segment_range_exceeds_timeline(self, tmp_path: Path):
         from ave.render.segment import SegmentError, render_segment
@@ -190,6 +186,4 @@ class TestRenderSegment:
         output = tmp_path / "seg_exceed.mp4"
 
         with pytest.raises(SegmentError):
-            render_segment(
-                xges_path, output, start_ns=0, end_ns=10 * GST_SECOND
-            )
+            render_segment(xges_path, output, start_ns=0, end_ns=10 * GST_SECOND)

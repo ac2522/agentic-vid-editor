@@ -52,9 +52,7 @@ class Orchestrator:
     def get_system_prompt(self) -> str:
         """Generate system prompt with domain summaries."""
         domains = self._session.registry.list_domains()
-        domain_lines = "\n".join(
-            f"- {d['domain']} ({d['count']} tools)" for d in domains
-        )
+        domain_lines = "\n".join(f"- {d['domain']} ({d['count']} tools)" for d in domains)
         return (
             "You are an AI video editor. You have access to editing tools organized by domain.\n\n"
             f"Available domains:\n{domain_lines}\n\n"

@@ -6,10 +6,8 @@ from ave.tools.transcribe import Transcript, TranscriptSegment
 from ave.tools.transcript_edit import (
     CutRegion,
     EditOp,
-    FillerMatch,
     KeepRegion,
     TranscriptEditError,
-    TranscriptMatch,
     compute_cuts_to_edit_ops,
     compute_filler_removal_cuts,
     compute_text_cut,

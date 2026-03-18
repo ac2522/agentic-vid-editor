@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 from ave.agent.session import EditingSession
-from ave.agent.registry import ToolRegistry, RegistryError
+from ave.agent.registry import ToolRegistry
 from ave.agent.dependencies import SessionState
 from ave.agent.orchestrator import Orchestrator, MetaToolDef
 
@@ -21,6 +21,9 @@ def session() -> EditingSession:
     s._state = SessionState()
     s._history = []
     s._project_path = None
+    s._snapshot_manager = None
+    s._transition_graph = None
+    s._lock = __import__("threading").Lock()
 
     @s._registry.tool(domain="math", requires=[], provides=["computed"])
     def add(a: int, b: int) -> int:
@@ -148,9 +151,7 @@ def test_orchestrator_handle_call_tool(orchestrator: Orchestrator):
 def test_orchestrator_handle_call_tool_error(orchestrator: Orchestrator):
     """Tool call error returns error message, not exception."""
     # "double" requires "computed" state which hasn't been set
-    result = orchestrator.handle_tool_call(
-        "call_tool", {"tool_name": "double", "params": {"x": 5}}
-    )
+    result = orchestrator.handle_tool_call("call_tool", {"tool_name": "double", "params": {"x": 5}})
 
     assert "Error" in result
     assert "PrerequisiteError" in result

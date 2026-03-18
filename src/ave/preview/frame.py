@@ -89,16 +89,19 @@ def extract_frame(
         cmd = [
             "ffmpeg",
             "-y",
-            "-ss", timecode,
-            "-i", str(video_path),
-            "-frames:v", "1",
+            "-ss",
+            timecode,
+            "-i",
+            str(video_path),
+            "-frames:v",
+            "1",
         ]
         if vf_filters:
             cmd.extend(["-vf", ",".join(vf_filters)])
         cmd.extend(fmt_args)
         cmd.append(str(dest))
 
-        result = subprocess.run(
+        subprocess.run(
             cmd,
             capture_output=True,
             check=True,

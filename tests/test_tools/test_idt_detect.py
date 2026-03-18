@@ -2,7 +2,6 @@
 
 from pathlib import Path
 
-import pytest
 
 from ave.ingest.probe import VideoStream
 from ave.ingest.registry import AssetEntry
@@ -77,16 +76,20 @@ class TestDetectIDT:
         )
         # Sony S-Log3 may have various ffprobe representations;
         # test the one we map
-        result = detect_idt(vs)
+        detect_idt(vs)
         # We just need it to return a string or None; the exact mapping
         # is tested via specific keys below.
 
     def test_sony_slog3_sgamut3cine_exact(self):
         """Sony S-Log3/S-Gamut3.Cine must map to the correct OCIO IDT."""
         # Use the exact key from IDT_MAP for Sony
-        sony_keys = [k for k in IDT_MAP if "slog3" in str(IDT_MAP[k]).lower() or "s-log3" in str(IDT_MAP[k]).lower()]
+        [
+            k
+            for k in IDT_MAP
+            if "slog3" in str(IDT_MAP[k]).lower() or "s-log3" in str(IDT_MAP[k]).lower()
+        ]
         # Instead, test with a known key
-        vs = _make_video_stream(
+        _make_video_stream(
             color_space="bt2020nc",
             color_transfer="smpte2084",
             color_primaries="bt2020",

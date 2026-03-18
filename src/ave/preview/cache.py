@@ -8,7 +8,7 @@ All times in nanoseconds.
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 
@@ -49,9 +49,7 @@ class SegmentCache:
     def register_segments(self, boundaries: list[tuple[int, int, int]]) -> None:
         """Register segments from (index, start_ns, end_ns) tuples. All start DIRTY."""
         for index, start_ns, end_ns in boundaries:
-            self._segments[index] = CachedSegment(
-                index=index, start_ns=start_ns, end_ns=end_ns
-            )
+            self._segments[index] = CachedSegment(index=index, start_ns=start_ns, end_ns=end_ns)
 
     def _get_segment(self, index: int) -> CachedSegment:
         if index not in self._segments:

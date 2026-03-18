@@ -13,10 +13,8 @@ from typing import TYPE_CHECKING
 
 from ave.tools.compositing import (
     BlendMode,
-    BlendShaderInfo,
     CompositingError,
     compute_blend_info,
-    compute_blend_params,
     compute_layer_params,
 )
 
@@ -50,9 +48,7 @@ def apply_layer_compositing(
 
     # Build clip_id lookup from input layers (compute_layer_params doesn't
     # carry clip_id, so we map by layer_index).
-    index_to_clip: dict[int, str] = {
-        layer["layer_index"]: layer["clip_id"] for layer in layers
-    }
+    index_to_clip: dict[int, str] = {layer["layer_index"]: layer["clip_id"] for layer in layers}
 
     ops: list[str] = []
     for params in validated:

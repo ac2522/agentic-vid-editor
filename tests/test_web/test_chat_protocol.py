@@ -2,7 +2,6 @@
 
 import json
 
-import pytest
 
 from ave.web.chat import (
     format_busy,

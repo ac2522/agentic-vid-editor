@@ -12,8 +12,19 @@ def register_editing_tools(registry: ToolRegistry) -> None:
         domain="editing",
         requires=["timeline_loaded", "clip_exists"],
         provides=["clip_trimmed"],
-        tags=["cut", "shorten", "crop timeline", "in point", "out point", "subclip",
-              "excerpt", "clip duration", "mark in", "mark out"],
+        tags=[
+            "cut",
+            "shorten",
+            "crop timeline",
+            "in point",
+            "out point",
+            "subclip",
+            "excerpt",
+            "clip duration",
+            "mark in",
+            "mark out",
+        ],
+        modifies_timeline=True,
     )
     def trim(clip_duration_ns: int, in_ns: int, out_ns: int):
         """Trim a clip to new in/out points in nanoseconds."""
@@ -26,6 +37,7 @@ def register_editing_tools(registry: ToolRegistry) -> None:
         requires=["timeline_loaded", "clip_exists"],
         provides=["clip_split"],
         tags=["razor", "blade", "cut at playhead", "divide", "slice", "bisect"],
+        modifies_timeline=True,
     )
     def split(
         clip_start_ns: int,
@@ -42,8 +54,16 @@ def register_editing_tools(registry: ToolRegistry) -> None:
         domain="editing",
         requires=["timeline_loaded"],
         provides=["clips_concatenated"],
-        tags=["join", "append", "combine clips", "sequence", "assemble",
-              "stitch together", "back to back"],
+        tags=[
+            "join",
+            "append",
+            "combine clips",
+            "sequence",
+            "assemble",
+            "stitch together",
+            "back to back",
+        ],
+        modifies_timeline=True,
     )
     def concatenate(durations_ns: list, start_ns: int = 0):
         """Compute sequential positions for concatenating clips."""
@@ -55,8 +75,18 @@ def register_editing_tools(registry: ToolRegistry) -> None:
         domain="editing",
         requires=["timeline_loaded", "clip_exists"],
         provides=["clip_speed_changed"],
-        tags=["slow motion", "fast forward", "ramp", "time stretch", "slo-mo",
-              "speed ramp", "playback rate", "timelapse", "retiming"],
+        tags=[
+            "slow motion",
+            "fast forward",
+            "ramp",
+            "time stretch",
+            "slo-mo",
+            "speed ramp",
+            "playback rate",
+            "timelapse",
+            "retiming",
+        ],
+        modifies_timeline=True,
     )
     def speed(clip_duration_ns: int, rate: float, preserve_pitch: bool = True):
         """Change playback speed of a clip by a rate multiplier."""
@@ -68,8 +98,8 @@ def register_editing_tools(registry: ToolRegistry) -> None:
         domain="editing",
         requires=["timeline_loaded", "clip_exists"],
         provides=["transition_added"],
-        tags=["crossfade", "dissolve", "wipe", "fade between", "smooth cut",
-              "morph cut"],
+        tags=["crossfade", "dissolve", "wipe", "fade between", "smooth cut", "morph cut"],
+        modifies_timeline=True,
     )
     def transition(
         clip_a_end_ns: int,

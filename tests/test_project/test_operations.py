@@ -366,9 +366,7 @@ class TestTimelineFade:
             duration_ns=5_000_000_000,
         )
 
-        effect_id = apply_fade(
-            tl, clip_id, fade_in_ns=1_000_000_000, fade_out_ns=1_000_000_000
-        )
+        effect_id = apply_fade(tl, clip_id, fade_in_ns=1_000_000_000, fade_out_ns=1_000_000_000)
 
         assert effect_id is not None
 

@@ -18,20 +18,20 @@ class OTIOImportError(Exception):
     """Raised when OTIO import fails."""
 
 
-def rational_time_to_ns(rt: "otio.opentime.RationalTime") -> int:
+def rational_time_to_ns(rt: "otio.opentime.RationalTime") -> int:  # noqa: F821
     """Convert OTIO RationalTime to nanoseconds."""
     seconds = rt.value / rt.rate
     return round(seconds * _NS_PER_SECOND)
 
 
-def time_range_to_ns(tr: "otio.opentime.TimeRange") -> tuple[int, int]:
+def time_range_to_ns(tr: "otio.opentime.TimeRange") -> tuple[int, int]:  # noqa: F821
     """Convert OTIO TimeRange to (start_ns, duration_ns)."""
     start_ns = rational_time_to_ns(tr.start_time)
     duration_ns = rational_time_to_ns(tr.duration)
     return start_ns, duration_ns
 
 
-def otio_clip_to_dict(clip: "otio.schema.Clip") -> dict:
+def otio_clip_to_dict(clip: "otio.schema.Clip") -> dict:  # noqa: F821
     """Convert OTIO Clip to AVE clip dict.
 
     Returns:
@@ -43,9 +43,7 @@ def otio_clip_to_dict(clip: "otio.schema.Clip") -> dict:
 
     # Extract source path from media reference
     source_path = ""
-    if clip.media_reference and not isinstance(
-        clip.media_reference, otio.schema.MissingReference
-    ):
+    if clip.media_reference and not isinstance(clip.media_reference, otio.schema.MissingReference):
         if hasattr(clip.media_reference, "target_url"):
             url = clip.media_reference.target_url
             # Strip file:// prefix if present
@@ -76,7 +74,8 @@ def otio_clip_to_dict(clip: "otio.schema.Clip") -> dict:
 
 
 def otio_track_to_layer(
-    track: "otio.schema.Track", layer_index: int
+    track: "otio.schema.Track",  # noqa: F821
+    layer_index: int,
 ) -> tuple[dict, list[str]]:
     """Convert OTIO Track to AVE layer dict.
 
@@ -96,20 +95,14 @@ def otio_track_to_layer(
                 child.media_reference, otio.schema.GeneratorReference
             ):
                 warnings.append(
-                    f"Skipped generator clip '{child.name}': "
-                    f"generator clips are not supported"
+                    f"Skipped generator clip '{child.name}': generator clips are not supported"
                 )
                 continue
             clips.append(otio_clip_to_dict(child))
         elif isinstance(child, (otio.schema.Stack, otio.schema.Track)):
             # Nested composition — flatten with warning
-            warnings.append(
-                f"Flattened nested composition '{child.name}' in track "
-                f"'{track.name}'"
-            )
-            nested_layer, nested_warnings = otio_track_to_layer(
-                child, layer_index
-            )
+            warnings.append(f"Flattened nested composition '{child.name}' in track '{track.name}'")
+            nested_layer, nested_warnings = otio_track_to_layer(child, layer_index)
             clips.extend(nested_layer["clips"])
             warnings.extend(nested_warnings)
         elif isinstance(child, otio.schema.Gap):
@@ -117,8 +110,7 @@ def otio_track_to_layer(
             pass
         elif isinstance(child, otio.schema.Transition):
             warnings.append(
-                f"Skipped transition '{child.name}': "
-                f"transitions are not directly importable"
+                f"Skipped transition '{child.name}': transitions are not directly importable"
             )
 
     # Collect effect warnings from clips that have effects
@@ -163,8 +155,7 @@ def import_timeline(otio_path: Path) -> dict:
         import opentimelineio as otio  # noqa: F811
     except ImportError:
         raise OTIOImportError(
-            "opentimelineio is not installed. "
-            "Install it with: pip install opentimelineio"
+            "opentimelineio is not installed. Install it with: pip install opentimelineio"
         )
 
     try:

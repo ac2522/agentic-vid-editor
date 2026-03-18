@@ -77,9 +77,7 @@ def _make_simple_otio(tmp_path: Path, name: str = "TestTimeline") -> Path:
             start_time=otio.opentime.RationalTime(0, 24),
             duration=otio.opentime.RationalTime(48, 24),
         ),
-        media_reference=otio.schema.ExternalReference(
-            target_url="file:///path/to/video.mp4"
-        ),
+        media_reference=otio.schema.ExternalReference(target_url="file:///path/to/video.mp4"),
     )
     track.append(clip)
     tl.tracks.append(track)
@@ -188,13 +186,9 @@ class TestImportTimeline:
                 start_time=otio.opentime.RationalTime(0, 24),
                 duration=otio.opentime.RationalTime(24, 24),
             ),
-            media_reference=otio.schema.ExternalReference(
-                target_url="file:///video.mp4"
-            ),
+            media_reference=otio.schema.ExternalReference(target_url="file:///video.mp4"),
         )
-        clip.effects.append(
-            otio.schema.Effect(name="Blur", effect_name="blur")
-        )
+        clip.effects.append(otio.schema.Effect(name="Blur", effect_name="blur"))
         track.append(clip)
         tl.tracks.append(track)
 
@@ -210,16 +204,14 @@ class TestImportTimeline:
         """Multiple tracks become multiple layers."""
         tl = otio.schema.Timeline(name="MultiTrack")
         for i in range(3):
-            track = otio.schema.Track(name=f"V{i+1}")
+            track = otio.schema.Track(name=f"V{i + 1}")
             clip = otio.schema.Clip(
                 name=f"clip_{i}",
                 source_range=otio.opentime.TimeRange(
                     start_time=otio.opentime.RationalTime(0, 24),
                     duration=otio.opentime.RationalTime(24, 24),
                 ),
-                media_reference=otio.schema.ExternalReference(
-                    target_url=f"file:///video_{i}.mp4"
-                ),
+                media_reference=otio.schema.ExternalReference(target_url=f"file:///video_{i}.mp4"),
             )
             track.append(clip)
             tl.tracks.append(track)
@@ -243,9 +235,7 @@ class TestImportTimeline:
                 start_time=otio.opentime.RationalTime(48, 24),  # 2 seconds in
                 duration=otio.opentime.RationalTime(24, 24),
             ),
-            media_reference=otio.schema.ExternalReference(
-                target_url="file:///video.mp4"
-            ),
+            media_reference=otio.schema.ExternalReference(target_url="file:///video.mp4"),
         )
         track.append(clip)
         tl.tracks.append(track)

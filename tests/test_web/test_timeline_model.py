@@ -61,16 +61,34 @@ class TestClipState:
 
     def test_clip_track_type_helpers(self):
         video_only = ClipState(
-            clip_id="v", asset_uri="", name="v", layer_index=0,
-            start_ns=0, duration_ns=1000, inpoint_ns=0, track_types=4,
+            clip_id="v",
+            asset_uri="",
+            name="v",
+            layer_index=0,
+            start_ns=0,
+            duration_ns=1000,
+            inpoint_ns=0,
+            track_types=4,
         )
         audio_only = ClipState(
-            clip_id="a", asset_uri="", name="a", layer_index=0,
-            start_ns=0, duration_ns=1000, inpoint_ns=0, track_types=2,
+            clip_id="a",
+            asset_uri="",
+            name="a",
+            layer_index=0,
+            start_ns=0,
+            duration_ns=1000,
+            inpoint_ns=0,
+            track_types=2,
         )
         both = ClipState(
-            clip_id="b", asset_uri="", name="b", layer_index=0,
-            start_ns=0, duration_ns=1000, inpoint_ns=0, track_types=6,
+            clip_id="b",
+            asset_uri="",
+            name="b",
+            layer_index=0,
+            start_ns=0,
+            duration_ns=1000,
+            inpoint_ns=0,
+            track_types=6,
         )
         assert video_only.has_video and not video_only.has_audio
         assert audio_only.has_audio and not audio_only.has_video
@@ -99,15 +117,30 @@ class TestTimelineModelSerialization:
 
     def test_duration_calculated_from_clips(self):
         tm = TimelineModel()
-        tm.add_clip(ClipState(
-            clip_id="c1", asset_uri="", name="c1", layer_index=0,
-            start_ns=0, duration_ns=2_000_000_000, inpoint_ns=0, track_types=6,
-        ))
-        tm.add_clip(ClipState(
-            clip_id="c2", asset_uri="", name="c2", layer_index=1,
-            start_ns=1_000_000_000, duration_ns=3_000_000_000,
-            inpoint_ns=0, track_types=6,
-        ))
+        tm.add_clip(
+            ClipState(
+                clip_id="c1",
+                asset_uri="",
+                name="c1",
+                layer_index=0,
+                start_ns=0,
+                duration_ns=2_000_000_000,
+                inpoint_ns=0,
+                track_types=6,
+            )
+        )
+        tm.add_clip(
+            ClipState(
+                clip_id="c2",
+                asset_uri="",
+                name="c2",
+                layer_index=1,
+                start_ns=1_000_000_000,
+                duration_ns=3_000_000_000,
+                inpoint_ns=0,
+                track_types=6,
+            )
+        )
         assert tm.duration_ns == 4_000_000_000
 
     def test_duration_empty(self):
@@ -119,11 +152,18 @@ class TestTimelineModelSerialization:
 
     def test_to_dict_with_clips(self):
         tm = TimelineModel()
-        tm.add_clip(ClipState(
-            clip_id="c1", asset_uri="file:///a.mov", name="a.mov",
-            layer_index=0, start_ns=0, duration_ns=1000,
-            inpoint_ns=0, track_types=6,
-        ))
+        tm.add_clip(
+            ClipState(
+                clip_id="c1",
+                asset_uri="file:///a.mov",
+                name="a.mov",
+                layer_index=0,
+                start_ns=0,
+                duration_ns=1000,
+                inpoint_ns=0,
+                track_types=6,
+            )
+        )
         d = tm.to_dict()
         assert len(d["layers"]) == 1
         assert len(d["layers"][0]["clips"]) == 1
@@ -139,8 +179,14 @@ class TestClipCRUD:
     def test_add_clip_creates_layer(self):
         tm = TimelineModel()
         clip = ClipState(
-            clip_id="c1", asset_uri="", name="c1", layer_index=2,
-            start_ns=0, duration_ns=1000, inpoint_ns=0, track_types=6,
+            clip_id="c1",
+            asset_uri="",
+            name="c1",
+            layer_index=2,
+            start_ns=0,
+            duration_ns=1000,
+            inpoint_ns=0,
+            track_types=6,
         )
         tm.add_clip(clip)
         # Layers 0, 1 should be created as empty; layer 2 has the clip
@@ -152,12 +198,24 @@ class TestClipCRUD:
     def test_add_clip_to_existing_layer(self):
         tm = TimelineModel()
         c1 = ClipState(
-            clip_id="c1", asset_uri="", name="c1", layer_index=0,
-            start_ns=0, duration_ns=1000, inpoint_ns=0, track_types=6,
+            clip_id="c1",
+            asset_uri="",
+            name="c1",
+            layer_index=0,
+            start_ns=0,
+            duration_ns=1000,
+            inpoint_ns=0,
+            track_types=6,
         )
         c2 = ClipState(
-            clip_id="c2", asset_uri="", name="c2", layer_index=0,
-            start_ns=1000, duration_ns=1000, inpoint_ns=0, track_types=6,
+            clip_id="c2",
+            asset_uri="",
+            name="c2",
+            layer_index=0,
+            start_ns=1000,
+            duration_ns=1000,
+            inpoint_ns=0,
+            track_types=6,
         )
         tm.add_clip(c1)
         tm.add_clip(c2)
@@ -166,8 +224,14 @@ class TestClipCRUD:
     def test_add_clip_duplicate_id_raises(self):
         tm = TimelineModel()
         clip = ClipState(
-            clip_id="c1", asset_uri="", name="c1", layer_index=0,
-            start_ns=0, duration_ns=1000, inpoint_ns=0, track_types=6,
+            clip_id="c1",
+            asset_uri="",
+            name="c1",
+            layer_index=0,
+            start_ns=0,
+            duration_ns=1000,
+            inpoint_ns=0,
+            track_types=6,
         )
         tm.add_clip(clip)
         with pytest.raises(ValueError, match="Duplicate clip_id"):
@@ -176,8 +240,14 @@ class TestClipCRUD:
     def test_remove_clip(self):
         tm = TimelineModel()
         clip = ClipState(
-            clip_id="c1", asset_uri="", name="c1", layer_index=0,
-            start_ns=0, duration_ns=1000, inpoint_ns=0, track_types=6,
+            clip_id="c1",
+            asset_uri="",
+            name="c1",
+            layer_index=0,
+            start_ns=0,
+            duration_ns=1000,
+            inpoint_ns=0,
+            track_types=6,
         )
         tm.add_clip(clip)
         tm.remove_clip("c1")
@@ -191,8 +261,14 @@ class TestClipCRUD:
     def test_update_clip(self):
         tm = TimelineModel()
         clip = ClipState(
-            clip_id="c1", asset_uri="", name="c1", layer_index=0,
-            start_ns=0, duration_ns=1000, inpoint_ns=0, track_types=6,
+            clip_id="c1",
+            asset_uri="",
+            name="c1",
+            layer_index=0,
+            start_ns=0,
+            duration_ns=1000,
+            inpoint_ns=0,
+            track_types=6,
         )
         tm.add_clip(clip)
         tm.update_clip("c1", start_ns=500, duration_ns=2000)
@@ -208,8 +284,14 @@ class TestClipCRUD:
     def test_get_clip(self):
         tm = TimelineModel()
         clip = ClipState(
-            clip_id="c1", asset_uri="", name="c1", layer_index=0,
-            start_ns=0, duration_ns=1000, inpoint_ns=0, track_types=6,
+            clip_id="c1",
+            asset_uri="",
+            name="c1",
+            layer_index=0,
+            start_ns=0,
+            duration_ns=1000,
+            inpoint_ns=0,
+            track_types=6,
         )
         tm.add_clip(clip)
         assert tm.get_clip("c1") is clip
@@ -306,9 +388,7 @@ class TestXGESParser:
         assert tm.fps == 30.0
 
     def test_framerate_default_when_missing(self):
-        xges_no_fps = SAMPLE_XGES.replace(
-            "properties, framerate=(fraction)24/1;", "properties;"
-        )
+        xges_no_fps = SAMPLE_XGES.replace("properties, framerate=(fraction)24/1;", "properties;")
         tm = TimelineModel.load_from_xges_string(xges_no_fps)
         assert tm.fps == 24.0
 

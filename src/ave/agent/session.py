@@ -1,18 +1,24 @@
 """Editing session manager — lifecycle for agent-driven editing.
 
 Manages: project loading, tool execution with state tracking,
-undo history, and session serialization.
+undo history, snapshot-based rollback, and session serialization.
+
+All tool calls are serialized via a threading lock to ensure
+snapshot and provision consistency when subagents run concurrently.
 """
 
 from __future__ import annotations
 
+import threading
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from ave.agent.registry import ToolRegistry, PrerequisiteError
+from ave.agent.registry import ToolRegistry
 from ave.agent.dependencies import SessionState
+from ave.agent.transitions import ToolTransitionGraph
+from ave.project.snapshots import SnapshotManager
 
 
 class SessionError(Exception):
@@ -36,16 +42,47 @@ class EditingSession:
     Provides:
     - Project loading (sets timeline_loaded state)
     - Tool execution with prerequisite validation and state tracking
+    - XGES snapshot capture before each tool call (for rollback)
     - Call history for undo and audit
+    - Thread-safe tool execution (lock serializes concurrent subagent calls)
     - Session serialization
     """
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        snapshot_manager: SnapshotManager | None = None,
+        transition_graph: ToolTransitionGraph | None = None,
+        plugin_dirs: list[Path] | None = None,
+        skill_dirs: list[Path] | None = None,
+    ) -> None:
         self._registry = ToolRegistry()
         self._state = SessionState()
         self._history: list[ToolCall] = []
         self._project_path: Path | None = None
+        self._snapshot_manager = snapshot_manager
+        self._transition_graph = transition_graph
+        self._lock = threading.Lock()
+        self._orchestrator_lock = threading.Lock()
         self._load_all_tools()
+
+        # Plugin and skill systems
+        from ave.plugins.loader import PluginLoader
+        from ave.skills.loader import SkillLoader
+
+        self._plugin_loader = PluginLoader(self._registry)
+        self._skill_loader = SkillLoader()
+
+        if plugin_dirs:
+            from ave.plugins.discovery import discover_plugins
+
+            for manifest in discover_plugins(plugin_dirs):
+                self._plugin_loader.register_manifest(manifest)
+
+        if skill_dirs:
+            from ave.skills.discovery import discover_skills
+
+            for meta in discover_skills(skill_dirs):
+                self._skill_loader.register(meta)
 
     def _load_all_tools(self) -> None:
         """Register all domain tools."""
@@ -60,6 +97,8 @@ class EditingSession:
         from ave.agent.tools.scene import register_scene_tools
         from ave.agent.tools.interchange import register_interchange_tools
         from ave.agent.tools.download import register_download_tools
+        from ave.agent.tools.research import register_research_tools
+        from ave.agent.tools.vfx import register_vfx_tools
 
         register_editing_tools(self._registry)
         register_audio_tools(self._registry)
@@ -72,6 +111,8 @@ class EditingSession:
         register_scene_tools(self._registry)
         register_interchange_tools(self._registry)
         register_download_tools(self._registry)
+        register_research_tools(self._registry)
+        register_vfx_tools(self._registry)
 
     def load_project(self, xges_path: Path) -> None:
         """Load a project file. Sets timeline_loaded state."""
@@ -86,6 +127,16 @@ class EditingSession:
         return self._registry
 
     @property
+    def orchestrator_lock(self) -> threading.Lock:
+        """Lock for serializing entire orchestration runs (e.g., MCP edit_video).
+
+        Use this to wrap multi-step operations that must not interleave
+        with other orchestration runs. The per-call _lock remains for
+        fine-grained snapshot integrity within a single tool call.
+        """
+        return self._orchestrator_lock
+
+    @property
     def state(self) -> SessionState:
         return self._state
 
@@ -97,27 +148,72 @@ class EditingSession:
         """Search for tools by keyword and/or domain."""
         return self._registry.search_tools(query, domain)
 
+    def match_skills(self, intent: str) -> list:
+        """Match user intent against registered skills."""
+        return self._skill_loader.match(intent)
+
+    def load_skill(self, skill_name: str) -> str:
+        """Load full skill body by name."""
+        meta = self._skill_loader.get(skill_name)
+        if meta is None:
+            raise SessionError(f"Unknown skill: {skill_name}")
+        return self._skill_loader.load_body(meta)
+
     def get_tool_schema(self, tool_name: str):
         """Get full parameter schema for a tool."""
         return self._registry.get_tool_schema(tool_name)
 
+    @property
+    def snapshot_manager(self) -> SnapshotManager | None:
+        return self._snapshot_manager
+
     def call_tool(self, tool_name: str, params: dict) -> Any:
-        """Execute a tool with state tracking and history recording."""
-        provisions = self._registry.get_tool_provisions(tool_name)
+        """Execute a tool with state tracking, snapshots, and history recording.
 
-        result = self._registry.call_tool(tool_name, params, self._state)
+        Thread-safe: serialized via lock for concurrent subagent safety.
+        If a snapshot manager is configured and a project is loaded, captures
+        a snapshot before execution. On failure, auto-restores the latest snapshot.
+        """
+        with self._lock:
+            provisions = self._registry.get_tool_provisions(tool_name)
 
-        self._history.append(
-            ToolCall(
-                tool_name=tool_name,
-                params=params,
-                result=result,
-                timestamp=time.time(),
-                provisions=provisions,
+            # Capture snapshot before execution
+            if self._project_path and self._snapshot_manager:
+                self._snapshot_manager.capture(
+                    self._project_path,
+                    label=f"before {tool_name}",
+                    provisions=self._state.provisions,
+                    tool_name=tool_name,
+                )
+
+            try:
+                result = self._registry.call_tool(tool_name, params, self._state)
+            except Exception:
+                # Auto-restore on failure
+                if self._project_path and self._snapshot_manager:
+                    restored = self._snapshot_manager.restore_latest(self._project_path)
+                    if restored:
+                        _, snap_provisions = restored
+                        self._state.reset()
+                        self._state.add(*snap_provisions)
+                raise
+
+            # Record transition from previous tool
+            if self._transition_graph and self._history:
+                prev_tool = self._history[-1].tool_name
+                self._transition_graph.record(prev_tool, tool_name)
+
+            self._history.append(
+                ToolCall(
+                    tool_name=tool_name,
+                    params=params,
+                    result=result,
+                    timestamp=time.time(),
+                    provisions=provisions,
+                )
             )
-        )
 
-        return result
+            return result
 
     def undo_last(self) -> ToolCall | None:
         """Remove last tool call from history. Returns the removed call.

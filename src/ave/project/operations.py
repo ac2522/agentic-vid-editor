@@ -144,9 +144,7 @@ def set_volume(timeline: Timeline, clip_id: str, level_db: float) -> str:
     # P0-5: Verify
     actual = timeline.get_effect_property(clip_id, effect_id, "volume")
     if abs(actual - params.linear_gain) > 0.001:
-        raise OperationError(
-            f"Volume not applied: expected {params.linear_gain}, got {actual}"
-        )
+        raise OperationError(f"Volume not applied: expected {params.linear_gain}, got {actual}")
 
     return effect_id
 
@@ -241,8 +239,7 @@ def set_speed(
     actual_duration = clip.get_duration()
     if actual_duration != params.new_duration_ns:
         raise OperationError(
-            f"Speed duration not applied: expected {params.new_duration_ns}, "
-            f"got {actual_duration}"
+            f"Speed duration not applied: expected {params.new_duration_ns}, got {actual_duration}"
         )
 
 

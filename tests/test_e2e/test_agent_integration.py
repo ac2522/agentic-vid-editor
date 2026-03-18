@@ -11,15 +11,15 @@ import json
 
 import pytest
 
-from ave.agent.dependencies import SessionState
 from ave.agent.orchestrator import Orchestrator
-from ave.agent.registry import PrerequisiteError, ToolRegistry
+from ave.agent.registry import PrerequisiteError
 from ave.agent.session import EditingSession
 
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _make_xges(tmp_path):
     """Create a minimal .xges file and return its path."""
@@ -131,9 +131,12 @@ class TestDiscoveryFlow:
         assert schema.domain == "transcription"
 
         transcript_json = _make_transcript_json()
-        result = session.call_tool("find_fillers", {
-            "transcript_json": transcript_json,
-        })
+        result = session.call_tool(
+            "find_fillers",
+            {
+                "transcript_json": transcript_json,
+            },
+        )
         # Should find "um" and "like"
         assert isinstance(result, list)
         assert len(result) >= 2
@@ -168,11 +171,14 @@ class TestSessionWorkflow:
         session.state.add("clip_exists")
 
         # Call trim
-        result = session.call_tool("trim", {
-            "clip_duration_ns": 10_000_000_000,
-            "in_ns": 1_000_000_000,
-            "out_ns": 5_000_000_000,
-        })
+        session.call_tool(
+            "trim",
+            {
+                "clip_duration_ns": 10_000_000_000,
+                "in_ns": 1_000_000_000,
+                "out_ns": 5_000_000_000,
+            },
+        )
         assert session.state.has("clip_trimmed")
 
     def test_prerequisite_chain_enforcement(self):
@@ -181,27 +187,36 @@ class TestSessionWorkflow:
         session = EditingSession()
 
         with pytest.raises(PrerequisiteError, match="timeline_loaded"):
-            session.call_tool("trim", {
-                "clip_duration_ns": 10_000_000_000,
-                "in_ns": 0,
-                "out_ns": 5_000_000_000,
-            })
+            session.call_tool(
+                "trim",
+                {
+                    "clip_duration_ns": 10_000_000_000,
+                    "in_ns": 0,
+                    "out_ns": 5_000_000_000,
+                },
+            )
 
     def test_multi_tool_workflow(self, tmp_path):
         """Create session -> load project -> call trim -> call split
         -> call volume -> verify history has 3 entries with correct tool names."""
         session = _session_with_project(tmp_path)
 
-        session.call_tool("trim", {
-            "clip_duration_ns": 10_000_000_000,
-            "in_ns": 1_000_000_000,
-            "out_ns": 9_000_000_000,
-        })
-        session.call_tool("split", {
-            "clip_start_ns": 0,
-            "clip_duration_ns": 8_000_000_000,
-            "split_position_ns": 4_000_000_000,
-        })
+        session.call_tool(
+            "trim",
+            {
+                "clip_duration_ns": 10_000_000_000,
+                "in_ns": 1_000_000_000,
+                "out_ns": 9_000_000_000,
+            },
+        )
+        session.call_tool(
+            "split",
+            {
+                "clip_start_ns": 0,
+                "clip_duration_ns": 8_000_000_000,
+                "split_position_ns": 4_000_000_000,
+            },
+        )
         session.call_tool("volume", {"level_db": -6.0})
 
         history = session.history
@@ -215,11 +230,14 @@ class TestSessionWorkflow:
         -> verify state has clip_trimmed -> undo -> verify clip_trimmed removed."""
         session = _session_with_project(tmp_path)
 
-        session.call_tool("trim", {
-            "clip_duration_ns": 10_000_000_000,
-            "in_ns": 1_000_000_000,
-            "out_ns": 5_000_000_000,
-        })
+        session.call_tool(
+            "trim",
+            {
+                "clip_duration_ns": 10_000_000_000,
+                "in_ns": 1_000_000_000,
+                "out_ns": 5_000_000_000,
+            },
+        )
         assert session.state.has("clip_trimmed")
 
         undone = session.undo_last()
@@ -232,11 +250,14 @@ class TestSessionWorkflow:
         -> verify empty state, empty history, no project."""
         session = _session_with_project(tmp_path)
 
-        session.call_tool("trim", {
-            "clip_duration_ns": 10_000_000_000,
-            "in_ns": 1_000_000_000,
-            "out_ns": 5_000_000_000,
-        })
+        session.call_tool(
+            "trim",
+            {
+                "clip_duration_ns": 10_000_000_000,
+                "in_ns": 1_000_000_000,
+                "out_ns": 5_000_000_000,
+            },
+        )
         session.call_tool("volume", {"level_db": -3.0})
         assert len(session.history) == 2
         assert session.state.has("timeline_loaded")
@@ -279,10 +300,13 @@ class TestOrchestratorIntegration:
         assert "audio" in schema_result
 
         # Step 3: call tool
-        call_result = orch.handle_tool_call("call_tool", {
-            "tool_name": "volume",
-            "params": {"level_db": -6.0},
-        })
+        call_result = orch.handle_tool_call(
+            "call_tool",
+            {
+                "tool_name": "volume",
+                "params": {"level_db": -6.0},
+            },
+        )
         assert "VolumeParams" in call_result
         assert "executed successfully" in call_result
 
@@ -292,10 +316,13 @@ class TestOrchestratorIntegration:
         session = EditingSession()
         orch = Orchestrator(session)
 
-        result = orch.handle_tool_call("call_tool", {
-            "tool_name": "nonexistent_tool",
-            "params": {},
-        })
+        result = orch.handle_tool_call(
+            "call_tool",
+            {
+                "tool_name": "nonexistent_tool",
+                "params": {},
+            },
+        )
         assert "Error:" in result
         # Should not raise — error is returned as a string
 
@@ -313,9 +340,7 @@ class TestOrchestratorIntegration:
         domains = session.registry.list_domains()
         for entry in domains:
             count_str = f"{entry['domain']} ({entry['count']} tools)"
-            assert count_str in prompt, (
-                f"Expected '{count_str}' in system prompt"
-            )
+            assert count_str in prompt, f"Expected '{count_str}' in system prompt"
 
     def test_orchestrator_unknown_meta_tool(self):
         """Calling an unknown meta-tool returns an error string."""
@@ -341,21 +366,27 @@ class TestCrossPhase:
         session = _session_with_project(tmp_path)
         orch = Orchestrator(session)
 
-        result = orch.handle_tool_call("call_tool", {
-            "tool_name": "compute_segments",
-            "params": {
-                "duration_ns": 15_000_000_000,
-                "segment_duration_ns": 5_000_000_000,
+        result = orch.handle_tool_call(
+            "call_tool",
+            {
+                "tool_name": "compute_segments",
+                "params": {
+                    "duration_ns": 15_000_000_000,
+                    "segment_duration_ns": 5_000_000_000,
+                },
             },
-        })
+        )
         assert "executed successfully" in result
         assert "SegmentBoundary" in result
 
         # Also verify via direct session call
-        boundaries = session.call_tool("compute_segments", {
-            "duration_ns": 15_000_000_000,
-            "segment_duration_ns": 5_000_000_000,
-        })
+        boundaries = session.call_tool(
+            "compute_segments",
+            {
+                "duration_ns": 15_000_000_000,
+                "segment_duration_ns": 5_000_000_000,
+            },
+        )
         assert isinstance(boundaries, list)
         assert len(boundaries) == 3
         assert boundaries[0].start_ns == 0
@@ -367,11 +398,14 @@ class TestCrossPhase:
         -> verify all fields present and correct types."""
         session = _session_with_project(tmp_path)
 
-        session.call_tool("trim", {
-            "clip_duration_ns": 10_000_000_000,
-            "in_ns": 1_000_000_000,
-            "out_ns": 5_000_000_000,
-        })
+        session.call_tool(
+            "trim",
+            {
+                "clip_duration_ns": 10_000_000_000,
+                "in_ns": 1_000_000_000,
+                "out_ns": 5_000_000_000,
+            },
+        )
         session.call_tool("volume", {"level_db": -3.0})
 
         data = session.to_dict()
@@ -426,23 +460,29 @@ class TestMultiToolWorkflow:
 
         # Cannot ingest without probing first
         with pytest.raises(PrerequisiteError, match="media_probed"):
-            session.call_tool("ingest_media", {
-                "source": "/tmp/test.mp4",
-                "project_dir": "/tmp/proj",
-                "asset_id": "a1",
-                "registry_path": "/tmp/reg.json",
-            })
+            session.call_tool(
+                "ingest_media",
+                {
+                    "source": "/tmp/test.mp4",
+                    "project_dir": "/tmp/proj",
+                    "asset_id": "a1",
+                    "registry_path": "/tmp/reg.json",
+                },
+            )
 
         # Simulate probe + ingest provisions, load project, then trim
         session.state.add("media_probed", "media_ingested")
         session.load_project(_make_xges(tmp_path))
         session.state.add("clip_exists")
 
-        result = session.call_tool("trim", {
-            "clip_duration_ns": 10_000_000_000,
-            "in_ns": 0,
-            "out_ns": 5_000_000_000,
-        })
+        result = session.call_tool(
+            "trim",
+            {
+                "clip_duration_ns": 10_000_000_000,
+                "in_ns": 0,
+                "out_ns": 5_000_000_000,
+            },
+        )
         assert result is not None
         assert session.state.has("media_probed")
         assert session.state.has("media_ingested")
@@ -455,21 +495,27 @@ class TestMultiToolWorkflow:
 
         # classify_shots requires scenes_detected — should fail
         with pytest.raises(PrerequisiteError, match="scenes_detected"):
-            session.call_tool("classify_shots", {
-                "video_path": "/tmp/test.mp4",
-                "scenes_json": "[]",
-                "output_dir": "/tmp/out",
-            })
+            session.call_tool(
+                "classify_shots",
+                {
+                    "video_path": "/tmp/test.mp4",
+                    "scenes_json": "[]",
+                    "output_dir": "/tmp/out",
+                },
+            )
 
         # Simulate detect_scenes provision (the real backend needs ffmpeg)
         session.state.add("scenes_detected")
 
         # Now classify should work
-        result = session.call_tool("classify_shots", {
-            "video_path": "/tmp/test.mp4",
-            "scenes_json": "[]",
-            "output_dir": "/tmp/out",
-        })
+        result = session.call_tool(
+            "classify_shots",
+            {
+                "video_path": "/tmp/test.mp4",
+                "scenes_json": "[]",
+                "output_dir": "/tmp/out",
+            },
+        )
         assert result is not None
         assert session.state.has("shots_classified")
 
@@ -477,21 +523,33 @@ class TestMultiToolWorkflow:
         """trim -> volume -> color_grade: multi-domain chain accumulates state."""
         session = _session_with_project(tmp_path)
 
-        session.call_tool("trim", {
-            "clip_duration_ns": 10_000_000_000,
-            "in_ns": 1_000_000_000,
-            "out_ns": 9_000_000_000,
-        })
+        session.call_tool(
+            "trim",
+            {
+                "clip_duration_ns": 10_000_000_000,
+                "in_ns": 1_000_000_000,
+                "out_ns": 9_000_000_000,
+            },
+        )
         assert session.state.has("clip_trimmed")
 
         session.call_tool("volume", {"level_db": -3.0})
         assert session.state.has("volume_set")
 
-        session.call_tool("color_grade", {
-            "lift_r": 0.0, "lift_g": 0.0, "lift_b": 0.0,
-            "gamma_r": 1.0, "gamma_g": 1.0, "gamma_b": 1.0,
-            "gain_r": 1.0, "gain_g": 1.0, "gain_b": 1.0,
-        })
+        session.call_tool(
+            "color_grade",
+            {
+                "lift_r": 0.0,
+                "lift_g": 0.0,
+                "lift_b": 0.0,
+                "gamma_r": 1.0,
+                "gamma_g": 1.0,
+                "gamma_b": 1.0,
+                "gain_r": 1.0,
+                "gain_g": 1.0,
+                "gain_b": 1.0,
+            },
+        )
         assert session.state.has("color_graded")
 
         # All three provisions accumulated
@@ -516,11 +574,14 @@ class TestUndoStateRollback:
         """Undo removes provisions not covered by remaining history."""
         session = _session_with_project(tmp_path)
 
-        session.call_tool("trim", {
-            "clip_duration_ns": 10_000_000_000,
-            "in_ns": 1_000_000_000,
-            "out_ns": 5_000_000_000,
-        })
+        session.call_tool(
+            "trim",
+            {
+                "clip_duration_ns": 10_000_000_000,
+                "in_ns": 1_000_000_000,
+                "out_ns": 5_000_000_000,
+            },
+        )
         assert session.state.has("clip_trimmed")
 
         session.call_tool("volume", {"level_db": -6.0})
@@ -543,16 +604,22 @@ class TestUndoStateRollback:
         session = _session_with_project(tmp_path)
 
         # Call compute_segments twice — both provide "segments_computed"
-        session.call_tool("compute_segments", {
-            "duration_ns": 10_000_000_000,
-            "segment_duration_ns": 5_000_000_000,
-        })
+        session.call_tool(
+            "compute_segments",
+            {
+                "duration_ns": 10_000_000_000,
+                "segment_duration_ns": 5_000_000_000,
+            },
+        )
         assert session.state.has("segments_computed")
 
-        session.call_tool("compute_segments", {
-            "duration_ns": 20_000_000_000,
-            "segment_duration_ns": 5_000_000_000,
-        })
+        session.call_tool(
+            "compute_segments",
+            {
+                "duration_ns": 20_000_000_000,
+                "segment_duration_ns": 5_000_000_000,
+            },
+        )
         assert session.state.has("segments_computed")
         assert len(session.history) == 2
 
@@ -571,17 +638,23 @@ class TestUndoStateRollback:
         """Undoing all calls restores empty state (except timeline_loaded from load_project)."""
         session = _session_with_project(tmp_path)
 
-        session.call_tool("trim", {
-            "clip_duration_ns": 10_000_000_000,
-            "in_ns": 1_000_000_000,
-            "out_ns": 5_000_000_000,
-        })
+        session.call_tool(
+            "trim",
+            {
+                "clip_duration_ns": 10_000_000_000,
+                "in_ns": 1_000_000_000,
+                "out_ns": 5_000_000_000,
+            },
+        )
         session.call_tool("volume", {"level_db": -3.0})
-        session.call_tool("fade", {
-            "clip_duration_ns": 10_000_000_000,
-            "fade_in_ns": 500_000_000,
-            "fade_out_ns": 500_000_000,
-        })
+        session.call_tool(
+            "fade",
+            {
+                "clip_duration_ns": 10_000_000_000,
+                "fade_in_ns": 500_000_000,
+                "fade_out_ns": 500_000_000,
+            },
+        )
 
         assert len(session.history) == 3
         assert session.state.has("clip_trimmed")
@@ -639,18 +712,21 @@ class TestSearchToCallFlow:
             session.state.add(req)
 
         # Step 5: Call with params derived from schema
-        result = session.call_tool(tool_name, {
-            "clip_duration_ns": 10_000_000_000,
-            "in_ns": 0,
-            "out_ns": 5_000_000_000,
-        })
+        result = session.call_tool(
+            tool_name,
+            {
+                "clip_duration_ns": 10_000_000_000,
+                "in_ns": 0,
+                "out_ns": 5_000_000_000,
+            },
+        )
         assert result is not None
 
     def test_domain_browse_then_pick(self):
         """Simulate: agent browses domains -> picks domain -> searches within it."""
         session = EditingSession()
         domains = session.registry.list_domains()
-        domain_names = [d["domain"] for d in domains]
+        [d["domain"] for d in domains]
         assert len(domains) >= 10
 
         # Browse color domain
@@ -721,11 +797,14 @@ class TestSessionSerialization:
         """Each call_tool adds to history with timestamp and provisions."""
         session = _session_with_project(tmp_path)
 
-        session.call_tool("trim", {
-            "clip_duration_ns": 10_000_000_000,
-            "in_ns": 1_000_000_000,
-            "out_ns": 5_000_000_000,
-        })
+        session.call_tool(
+            "trim",
+            {
+                "clip_duration_ns": 10_000_000_000,
+                "in_ns": 1_000_000_000,
+                "out_ns": 5_000_000_000,
+            },
+        )
         session.call_tool("volume", {"level_db": -6.0})
 
         history = session.history
@@ -746,11 +825,14 @@ class TestSessionSerialization:
         """Serialization reflects accumulated state after tool calls."""
         session = _session_with_project(tmp_path)
 
-        session.call_tool("trim", {
-            "clip_duration_ns": 10_000_000_000,
-            "in_ns": 1_000_000_000,
-            "out_ns": 5_000_000_000,
-        })
+        session.call_tool(
+            "trim",
+            {
+                "clip_duration_ns": 10_000_000_000,
+                "in_ns": 1_000_000_000,
+                "out_ns": 5_000_000_000,
+            },
+        )
 
         d = session.to_dict()
         assert d["history_length"] == 1
@@ -782,40 +864,52 @@ class TestPrerequisiteEnforcement:
         """Trim requires timeline_loaded — fails on fresh session."""
         session = EditingSession()
         with pytest.raises(PrerequisiteError, match="timeline_loaded"):
-            session.call_tool("trim", {
-                "clip_duration_ns": 10_000_000_000,
-                "in_ns": 0,
-                "out_ns": 5_000_000_000,
-            })
+            session.call_tool(
+                "trim",
+                {
+                    "clip_duration_ns": 10_000_000_000,
+                    "in_ns": 0,
+                    "out_ns": 5_000_000_000,
+                },
+            )
 
     def test_cannot_search_transcript_without_loaded(self):
         """search_transcript requires transcript_loaded."""
         session = EditingSession()
         with pytest.raises(PrerequisiteError, match="transcript_loaded"):
-            session.call_tool("search_transcript", {
-                "transcript_json": "{}",
-                "query": "hello",
-            })
+            session.call_tool(
+                "search_transcript",
+                {
+                    "transcript_json": "{}",
+                    "query": "hello",
+                },
+            )
 
     def test_cannot_classify_without_scenes_detected(self):
         """classify_shots requires scenes_detected."""
         session = EditingSession()
         session.state.add("timeline_loaded")
         with pytest.raises(PrerequisiteError, match="scenes_detected"):
-            session.call_tool("classify_shots", {
-                "video_path": "/tmp/v.mp4",
-                "scenes_json": "[]",
-                "output_dir": "/tmp/o",
-            })
+            session.call_tool(
+                "classify_shots",
+                {
+                    "video_path": "/tmp/v.mp4",
+                    "scenes_json": "[]",
+                    "output_dir": "/tmp/o",
+                },
+            )
 
     def test_cannot_export_otio_without_timeline(self):
         """export_otio requires timeline_loaded."""
         session = EditingSession()
         with pytest.raises(PrerequisiteError, match="timeline_loaded"):
-            session.call_tool("export_otio", {
-                "timeline_data_json": "{}",
-                "output_path": "/tmp/out.otio",
-            })
+            session.call_tool(
+                "export_otio",
+                {
+                    "timeline_data_json": "{}",
+                    "output_path": "/tmp/out.otio",
+                },
+            )
 
     def test_import_otio_has_no_prerequisites(self):
         """import_otio has no prerequisites — should not raise PrerequisiteError."""
@@ -840,17 +934,29 @@ class TestPrerequisiteEnforcement:
         session.load_project(_make_xges(tmp_path))
         # Has timeline_loaded but not clip_exists
         with pytest.raises(PrerequisiteError, match="clip_exists"):
-            session.call_tool("color_grade", {
-                "lift_r": 0.0, "lift_g": 0.0, "lift_b": 0.0,
-                "gamma_r": 1.0, "gamma_g": 1.0, "gamma_b": 1.0,
-                "gain_r": 1.0, "gain_g": 1.0, "gain_b": 1.0,
-            })
+            session.call_tool(
+                "color_grade",
+                {
+                    "lift_r": 0.0,
+                    "lift_g": 0.0,
+                    "lift_b": 0.0,
+                    "gamma_r": 1.0,
+                    "gamma_g": 1.0,
+                    "gamma_b": 1.0,
+                    "gain_r": 1.0,
+                    "gain_g": 1.0,
+                    "gain_b": 1.0,
+                },
+            )
 
     def test_cannot_normalize_without_clip(self):
         """normalize requires timeline_loaded and clip_exists."""
         session = EditingSession()
         with pytest.raises(PrerequisiteError):
-            session.call_tool("normalize", {
-                "current_peak_db": -3.0,
-                "target_peak_db": -1.0,
-            })
+            session.call_tool(
+                "normalize",
+                {
+                    "current_peak_db": -3.0,
+                    "target_peak_db": -1.0,
+                },
+            )

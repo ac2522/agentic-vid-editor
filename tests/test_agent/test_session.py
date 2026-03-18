@@ -4,11 +4,10 @@ from __future__ import annotations
 
 import time
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 
-from ave.agent.session import EditingSession, SessionError, ToolCall
+from ave.agent.session import EditingSession, SessionError
 from ave.agent.registry import PrerequisiteError, ToolRegistry
 from ave.agent.dependencies import SessionState
 
@@ -24,6 +23,9 @@ def session() -> EditingSession:
     s._state = SessionState()
     s._history = []
     s._project_path = None
+    s._snapshot_manager = None
+    s._transition_graph = None
+    s._lock = __import__("threading").Lock()
 
     # Register a simple tool with no prerequisites
     @s._registry.tool(domain="test", requires=[], provides=["thing_done"])

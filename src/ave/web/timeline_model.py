@@ -205,9 +205,7 @@ class TimelineModel:
 
         # Parse effects
         effects = [
-            eff.get("asset-id", "")
-            for eff in clip_el.findall("effect")
-            if eff.get("asset-id")
+            eff.get("asset-id", "") for eff in clip_el.findall("effect") if eff.get("asset-id")
         ]
 
         return ClipState(

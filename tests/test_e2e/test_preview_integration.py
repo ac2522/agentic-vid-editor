@@ -7,12 +7,11 @@ coherently together end-to-end.
 from __future__ import annotations
 
 import base64
-import json
 from pathlib import Path
 
 import pytest
 
-from ave.preview.cache import CacheError, SegmentCache, SegmentState
+from ave.preview.cache import SegmentCache, SegmentState
 from ave.preview.frame import compute_frame_timecode, extract_frame
 from ave.render.segment import (
     SegmentBoundary,
@@ -71,9 +70,7 @@ class TestPreviewPipeline:
         boundaries = compute_segment_boundaries(duration_ns, segment_duration_ns=5 * NS_PER_SEC)
 
         timeline_id = "proj42"
-        filenames = [
-            segment_filename(timeline_id, b.start_ns, b.end_ns) for b in boundaries
-        ]
+        filenames = [segment_filename(timeline_id, b.start_ns, b.end_ns) for b in boundaries]
 
         assert len(filenames) == 4
         for fn in filenames:
@@ -110,10 +107,10 @@ class TestPreviewPipeline:
         cache.invalidate_range(5 * NS_PER_SEC, 10 * NS_PER_SEC)
 
         # Segment 1 (5s-10s) should be DIRTY; others remain CLEAN
-        assert cache.get_state(0) == SegmentState.CLEAN   # 0s-5s
-        assert cache.get_state(1) == SegmentState.DIRTY   # 5s-10s
-        assert cache.get_state(2) == SegmentState.CLEAN   # 10s-15s
-        assert cache.get_state(3) == SegmentState.CLEAN   # 15s-20s
+        assert cache.get_state(0) == SegmentState.CLEAN  # 0s-5s
+        assert cache.get_state(1) == SegmentState.DIRTY  # 5s-10s
+        assert cache.get_state(2) == SegmentState.CLEAN  # 10s-15s
+        assert cache.get_state(3) == SegmentState.CLEAN  # 15s-20s
 
     def test_viewport_priority_ordering(self, tmp_path: Path) -> None:
         """Register 4 segments, set viewport to 8s-15s,
@@ -273,9 +270,7 @@ class TestServerIntegration:
     def _skip_if_no_aiohttp(self) -> None:
         pytest.importorskip("aiohttp")
 
-    def _make_cache_with_segments(
-        self, cache_dir: Path, n_segments: int = 4
-    ) -> SegmentCache:
+    def _make_cache_with_segments(self, cache_dir: Path, n_segments: int = 4) -> SegmentCache:
         """Create a SegmentCache with registered segments."""
         cache = SegmentCache(cache_dir, timeline_id="server_test")
         boundaries = _boundaries_as_tuples(
@@ -291,7 +286,7 @@ class TestServerIntegration:
     async def test_server_with_real_cache(self, tmp_path: Path) -> None:
         """Create real SegmentCache with registered segments, create app,
         GET /api/status, verify counts match cache."""
-        from aiohttp.test_utils import AioHTTPTestCase, TestClient, TestServer
+        from aiohttp.test_utils import TestClient, TestServer
 
         from ave.preview.server import PreviewServer
 

@@ -43,9 +43,7 @@ def compute_segment_boundaries(
         SegmentError: If duration_ns is zero or negative.
     """
     if duration_ns <= 0:
-        raise SegmentError(
-            f"Timeline duration must be positive, got {duration_ns} ns"
-        )
+        raise SegmentError(f"Timeline duration must be positive, got {duration_ns} ns")
 
     segments: list[SegmentBoundary] = []
     index = 0
@@ -129,9 +127,7 @@ def render_segment(
 
     # Encoding profile: H.264 video in fMP4 container
     # Use streamheader variant for fragmented MP4
-    container_caps = Gst.Caps.from_string(
-        "video/quicktime,variant=iso,streamheader=frag"
-    )
+    container_caps = Gst.Caps.from_string("video/quicktime,variant=iso,streamheader=frag")
     container_profile = GstPbutils.EncodingContainerProfile.new(
         "fmp4",
         None,
@@ -198,6 +194,4 @@ def render_segment(
     pipeline.set_state(Gst.State.NULL)
 
     if not output_path.exists():
-        raise SegmentError(
-            f"Segment render completed but output not found: {output_path}"
-        )
+        raise SegmentError(f"Segment render completed but output not found: {output_path}")

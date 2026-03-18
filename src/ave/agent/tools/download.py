@@ -13,9 +13,16 @@ def register_download_tools(registry: ToolRegistry) -> None:
         requires=[],
         provides=["search_results"],
         tags=[
-            "youtube", "search video", "find song", "find music",
-            "look up video", "search youtube", "find on youtube",
-            "music search", "video search", "yt-dlp",
+            "youtube",
+            "search video",
+            "find song",
+            "find music",
+            "look up video",
+            "search youtube",
+            "find on youtube",
+            "music search",
+            "video search",
+            "yt-dlp",
         ],
     )
     def search_youtube(query: str, max_results: int = 5) -> str:
@@ -24,8 +31,7 @@ def register_download_tools(registry: ToolRegistry) -> None:
 
         results = _search(query, max_results)
         return "\n".join(
-            f"{r.title} | {r.url} | {r.duration_seconds}s | {r.uploader}"
-            for r in results
+            f"{r.title} | {r.url} | {r.duration_seconds}s | {r.uploader}" for r in results
         )
 
     @registry.tool(
@@ -33,9 +39,14 @@ def register_download_tools(registry: ToolRegistry) -> None:
         requires=[],
         provides=["formats_listed"],
         tags=[
-            "available formats", "video quality", "audio quality",
-            "what quality", "resolution options", "format list",
-            "check quality", "available resolutions",
+            "available formats",
+            "video quality",
+            "audio quality",
+            "what quality",
+            "resolution options",
+            "format list",
+            "check quality",
+            "available resolutions",
         ],
     )
     def list_available_formats(url: str) -> str:
@@ -62,12 +73,28 @@ def register_download_tools(registry: ToolRegistry) -> None:
         requires=[],
         provides=["media_downloaded"],
         tags=[
-            "download video", "download audio", "download song",
-            "download music", "download from youtube", "yt-dlp",
-            "rip audio", "extract audio", "save video", "grab video",
-            "get song", "get video", "fetch video", "fetch audio",
-            "highest quality", "lowest quality", "best quality",
-            "mp3", "flac", "wav", "audio only", "video only",
+            "download video",
+            "download audio",
+            "download song",
+            "download music",
+            "download from youtube",
+            "yt-dlp",
+            "rip audio",
+            "extract audio",
+            "save video",
+            "grab video",
+            "get song",
+            "get video",
+            "fetch video",
+            "fetch audio",
+            "highest quality",
+            "lowest quality",
+            "best quality",
+            "mp3",
+            "flac",
+            "wav",
+            "audio only",
+            "video only",
         ],
     )
     def download_media(

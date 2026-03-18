@@ -17,9 +17,7 @@ from ave.preview.frame import extract_frame
 try:
     from aiohttp import web
 except ImportError:
-    raise ImportError(
-        "aiohttp required for preview server. Install with: pip install ave[preview]"
-    )
+    raise ImportError("aiohttp required for preview server. Install with: pip install ave[preview]")
 
 
 class PreviewServer:
@@ -41,11 +39,13 @@ class PreviewServer:
     def create_app(self) -> web.Application:
         """Create the aiohttp application with all routes."""
         app = web.Application()
-        app.add_routes([
-            web.get("/", self._handle_index),
-            web.get("/ws", self._handle_websocket),
-            web.get("/api/status", self._handle_status),
-        ])
+        app.add_routes(
+            [
+                web.get("/", self._handle_index),
+                web.get("/ws", self._handle_websocket),
+                web.get("/api/status", self._handle_status),
+            ]
+        )
         # Serve segment files as static
         app.add_routes([web.static("/segments", self._segments_dir)])
         # Store reference so tests can access the server instance
@@ -92,19 +92,21 @@ class PreviewServer:
         if msg_type == "frame":
             await self._handle_frame_request(ws, message)
         elif msg_type == "playback":
-            await ws.send_json({
-                "type": "playback_ack",
-                "state": message.get("state"),
-            })
+            await ws.send_json(
+                {
+                    "type": "playback_ack",
+                    "state": message.get("state"),
+                }
+            )
         else:
-            await ws.send_json({
-                "type": "error",
-                "message": f"Unknown message type: {msg_type}",
-            })
+            await ws.send_json(
+                {
+                    "type": "error",
+                    "message": f"Unknown message type: {msg_type}",
+                }
+            )
 
-    async def _handle_frame_request(
-        self, ws: web.WebSocketResponse, message: dict
-    ) -> None:
+    async def _handle_frame_request(self, ws: web.WebSocketResponse, message: dict) -> None:
         """Extract and return a frame at the requested timecode."""
         timestamp_ns = message.get("timestamp_ns")
         if timestamp_ns is None:
@@ -121,12 +123,14 @@ class PreviewServer:
                 None, lambda: extract_frame(self._video_path, timestamp_ns, format="jpeg")
             )
             frame_b64 = base64.b64encode(frame_bytes).decode("ascii")
-            await ws.send_json({
-                "type": "frame",
-                "timestamp_ns": timestamp_ns,
-                "data": frame_b64,
-                "format": "jpeg",
-            })
+            await ws.send_json(
+                {
+                    "type": "frame",
+                    "timestamp_ns": timestamp_ns,
+                    "data": frame_b64,
+                    "format": "jpeg",
+                }
+            )
         except Exception as e:
             await ws.send_json({"type": "error", "message": str(e)})
 

@@ -12,8 +12,7 @@ def register_render_tools(registry: ToolRegistry) -> None:
         domain="render",
         requires=["timeline_loaded"],
         provides=["proxy_rendered"],
-        tags=["preview render", "low res", "offline", "proxy file",
-              "lightweight render", "draft"],
+        tags=["preview render", "low res", "offline", "proxy file", "lightweight render", "draft"],
     )
     def render_proxy(xges_path: str, output_path: str, height: int = 480):
         """Render an XGES timeline to an H.264 proxy MP4."""
@@ -27,8 +26,7 @@ def register_render_tools(registry: ToolRegistry) -> None:
         domain="render",
         requires=["timeline_loaded"],
         provides=["segment_rendered"],
-        tags=["chunk render", "partial render", "segment export",
-              "fragmented mp4"],
+        tags=["chunk render", "partial render", "segment export", "fragmented mp4"],
     )
     def render_segment(
         xges_path: str,
@@ -48,8 +46,7 @@ def register_render_tools(registry: ToolRegistry) -> None:
         domain="render",
         requires=["timeline_loaded"],
         provides=["segments_computed"],
-        tags=["split timeline", "chunk boundaries", "render planning",
-              "parallel render"],
+        tags=["split timeline", "chunk boundaries", "render planning", "parallel render"],
     )
     def compute_segments(duration_ns: int, segment_duration_ns: int = 5_000_000_000):
         """Compute segment boundaries for splitting a timeline into chunks."""
@@ -61,8 +58,15 @@ def register_render_tools(registry: ToolRegistry) -> None:
         domain="render",
         requires=["timeline_loaded"],
         provides=["preset_rendered"],
-        tags=["export preset", "youtube", "instagram", "prores", "render preset",
-              "output format", "delivery"],
+        tags=[
+            "export preset",
+            "youtube",
+            "instagram",
+            "prores",
+            "render preset",
+            "output format",
+            "delivery",
+        ],
     )
     def render_with_preset(xges_path: str, preset_name: str, output_path: str) -> str:
         """Render timeline using a named preset (e.g. youtube_4k, instagram_reel, prores_master)."""
@@ -81,8 +85,13 @@ def register_render_tools(registry: ToolRegistry) -> None:
         domain="render",
         requires=[],
         provides=[],
-        tags=["available presets", "render options", "export formats",
-              "output presets", "show presets"],
+        tags=[
+            "available presets",
+            "render options",
+            "export formats",
+            "output presets",
+            "show presets",
+        ],
     )
     def list_render_presets() -> str:
         """List all available render presets with their descriptions."""
