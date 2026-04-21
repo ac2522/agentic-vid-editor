@@ -15,6 +15,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from ave.agent.activity import ActivityLog
 from ave.agent.dependencies import SessionState
 from ave.agent.errors import ScopeViolationError
 from ave.agent.registry import ToolRegistry
@@ -56,6 +57,7 @@ class EditingSession:
         transition_graph: ToolTransitionGraph | None = None,
         plugin_dirs: list[Path] | None = None,
         skill_dirs: list[Path] | None = None,
+        activity_log: ActivityLog | None = None,
     ) -> None:
         self._registry = ToolRegistry()
         self._state = SessionState()
@@ -63,6 +65,7 @@ class EditingSession:
         self._project_path: Path | None = None
         self._snapshot_manager = snapshot_manager
         self._transition_graph = transition_graph
+        self._activity_log = activity_log
         self._lock = threading.Lock()
         self._orchestrator_lock = threading.Lock()
         self._load_all_tools()
@@ -235,7 +238,34 @@ class EditingSession:
                 )
             )
 
+            activity_log = getattr(self, "_activity_log", None)
+            if activity_log is not None:
+                snap_id = ""
+                if self._snapshot_manager is not None:
+                    snaps = self._snapshot_manager.list_snapshots()
+                    if snaps:
+                        snap_id = snaps[-1].snapshot_id
+                activity_log.append(
+                    agent_id=(agent_role.name if agent_role else "anonymous"),
+                    tool_name=tool_name,
+                    summary=self._build_log_summary(tool_name, params),
+                    snapshot_id=snap_id,
+                )
+
             return result
+
+    def _build_log_summary(self, tool_name: str, params: dict) -> str:
+        """Build a terse one-line summary for the activity log.
+
+        Default format: tool_name(key1=val1, key2=val2) with values truncated.
+        """
+        items = []
+        for k, v in params.items():
+            s = repr(v)
+            if len(s) > 30:
+                s = s[:27] + "..."
+            items.append(f"{k}={s}")
+        return f"{tool_name}({', '.join(items)})"
 
     def undo_last(self) -> ToolCall | None:
         """Remove last tool call from history. Returns the removed call.
