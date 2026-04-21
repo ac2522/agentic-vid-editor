@@ -11,6 +11,8 @@ import asyncio
 import json
 import logging
 
+from ave.agent.state_sync import build_state_summary
+
 logger = logging.getLogger(__name__)
 
 
@@ -90,6 +92,29 @@ class ChatSession:
         self._messages: list[dict] = []
         self._processing = False
         self._cancel_event = asyncio.Event()
+        self._last_summary_timestamp: float = 0.0
+
+    def _prepare_user_content(self, text: str) -> str:
+        """Prefix the user's message with a state summary covering activity since the last turn.
+
+        The state-sync summary tells the agent what happened (e.g., user undos,
+        other agents' edits) between agent turns. When the orchestrator does not
+        expose a session/activity_log, the original text is returned unchanged.
+        """
+        session = getattr(self._orchestrator, "session", None)
+        if session is None:
+            return text
+        activity_log = getattr(session, "_activity_log", None)
+        if activity_log is None:
+            return text
+
+        summary = build_state_summary(
+            session=session,
+            activity_log=activity_log,
+            since_timestamp=self._last_summary_timestamp,
+        )
+        self._last_summary_timestamp = summary.generated_at
+        return summary.render() + "\n\n" + text
 
     async def handle_message(self, ws, text: str) -> None:
         """Process a user message.  Rejects with busy if already processing."""
@@ -121,7 +146,7 @@ class ChatSession:
             await ws.send_json(format_done(self._orchestrator.turn_count))
             return
 
-        self._messages.append({"role": "user", "content": text})
+        self._messages.append({"role": "user", "content": self._prepare_user_content(text)})
         loop = asyncio.get_running_loop()
         client = anthropic.AsyncAnthropic()
         tools = self._get_tools_json()
