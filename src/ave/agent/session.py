@@ -17,7 +17,7 @@ from typing import Any
 
 from ave.agent.activity import ActivityLog
 from ave.agent.dependencies import SessionState
-from ave.agent.errors import ScopeViolationError
+from ave.agent.errors import ScopeViolationError, SourceAssetWriteError
 from ave.agent.registry import ToolRegistry
 from ave.agent.roles import AgentRole
 from ave.agent.transitions import ToolTransitionGraph
@@ -58,6 +58,7 @@ class EditingSession:
         plugin_dirs: list[Path] | None = None,
         skill_dirs: list[Path] | None = None,
         activity_log: ActivityLog | None = None,
+        project_root: Path | None = None,
     ) -> None:
         self._registry = ToolRegistry()
         self._state = SessionState()
@@ -66,6 +67,7 @@ class EditingSession:
         self._snapshot_manager = snapshot_manager
         self._transition_graph = transition_graph
         self._activity_log = activity_log
+        self._project_root = Path(project_root).resolve() if project_root else None
         self._lock = threading.Lock()
         self._orchestrator_lock = threading.Lock()
         self._load_all_tools()
@@ -199,6 +201,8 @@ class EditingSession:
                     f"role owns {[d.value for d in agent_role.owned_domains]}"
                 )
 
+        self._check_source_asset_immutability(params)
+
         with self._lock:
             provisions = self._registry.get_tool_provisions(tool_name)
 
@@ -266,6 +270,35 @@ class EditingSession:
                 s = s[:27] + "..."
             items.append(f"{k}={s}")
         return f"{tool_name}({', '.join(items)})"
+
+    def _check_source_asset_immutability(self, params: dict) -> None:
+        """Reject tool calls whose params include paths under assets/media/source/.
+
+        Walks the params dict looking for str/Path values. For each, resolves
+        the path and checks whether it falls under ``<project_root>/assets/media/source/``.
+        Raises ``SourceAssetWriteError`` on hit.
+
+        Skips when no ``project_root`` is configured (backward compat).
+        """
+        project_root = getattr(self, "_project_root", None)
+        if project_root is None:
+            return
+        source_root = (project_root / "assets" / "media" / "source").resolve()
+        for value in params.values():
+            if not isinstance(value, (str, Path)):
+                continue
+            try:
+                candidate = Path(value).resolve()
+            except (OSError, ValueError):
+                continue
+            try:
+                candidate.relative_to(source_root)
+            except ValueError:
+                continue  # not under source root
+            raise SourceAssetWriteError(
+                f"Tool call would touch source asset: {candidate} "
+                f"(source assets under {source_root} are write-protected)"
+            )
 
     def undo_last(self) -> ToolCall | None:
         """Remove last tool call from history. Returns the removed call.
