@@ -11,6 +11,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from ave.agent.domains import Domain
+
 
 @dataclass(frozen=True)
 class AgentRole:
@@ -20,6 +22,7 @@ class AgentRole:
     description: str
     system_prompt: str
     domains: tuple[str, ...]
+    owned_domains: tuple[Domain, ...] = ()
 
 
 EDITOR_ROLE = AgentRole(
@@ -53,6 +56,7 @@ EDITOR_ROLE = AgentRole(
         "- scene: scene detection, keyframe extraction, boundary analysis\n"
     ),
     domains=("editing", "compositing", "motion_graphics", "scene"),
+    owned_domains=(Domain.TIMELINE_STRUCTURE, Domain.VIDEO, Domain.SUBTITLE),
 )
 
 COLORIST_ROLE = AgentRole(
@@ -82,6 +86,7 @@ COLORIST_ROLE = AgentRole(
         "- color: LUT application, CDL adjustments, color space management, grading\n"
     ),
     domains=("color",),
+    owned_domains=(Domain.COLOR,),
 )
 
 SOUND_DESIGNER_ROLE = AgentRole(
@@ -106,6 +111,7 @@ SOUND_DESIGNER_ROLE = AgentRole(
         "- audio: volume, fades, normalization, mixing, EQ, compression\n"
     ),
     domains=("audio",),
+    owned_domains=(Domain.AUDIO,),
 )
 
 TRANSCRIPTIONIST_ROLE = AgentRole(
@@ -134,6 +140,7 @@ TRANSCRIPTIONIST_ROLE = AgentRole(
         "- transcription: speech-to-text, word alignment, transcript search, filler removal\n"
     ),
     domains=("transcription",),
+    owned_domains=(Domain.SUBTITLE, Domain.METADATA),
 )
 
 RESEARCHER_ROLE = AgentRole(
@@ -161,6 +168,7 @@ RESEARCHER_ROLE = AgentRole(
         "- research: web search, technique synthesis\n"
     ),
     domains=("research",),
+    owned_domains=(Domain.RESEARCH,),
 )
 
 VFX_ARTIST_ROLE = AgentRole(
@@ -188,6 +196,7 @@ VFX_ARTIST_ROLE = AgentRole(
         "- vfx: segmentation, keying, mask evaluation, compositing\n"
     ),
     domains=("vfx",),
+    owned_domains=(Domain.VFX_MASK, Domain.VIDEO),
 )
 
 ALL_ROLES: tuple[AgentRole, ...] = (

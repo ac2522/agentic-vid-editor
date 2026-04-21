@@ -121,3 +121,36 @@ def test_transcriptionist_role_domains():
 def test_all_roles_is_tuple():
     """ALL_ROLES is a tuple (immutable collection)."""
     assert isinstance(ALL_ROLES, tuple)
+
+
+def test_all_roles_have_owned_domains():
+    """Every built-in role declares at least one owned domain."""
+    from ave.agent.domains import Domain
+
+    for role in ALL_ROLES:
+        assert isinstance(role.owned_domains, tuple)
+        assert len(role.owned_domains) > 0, f"{role.name} has no owned_domains"
+        for d in role.owned_domains:
+            assert isinstance(d, Domain), (
+                f"{role.name} owned_domains contains non-Domain: {d!r}"
+            )
+
+
+def test_editor_owns_timeline_structure_and_video():
+    from ave.agent.domains import Domain
+
+    assert Domain.TIMELINE_STRUCTURE in EDITOR_ROLE.owned_domains
+    assert Domain.VIDEO in EDITOR_ROLE.owned_domains
+
+
+def test_sound_designer_owns_only_audio():
+    from ave.agent.domains import Domain
+
+    assert SOUND_DESIGNER_ROLE.owned_domains == (Domain.AUDIO,)
+
+
+def test_transcriptionist_owns_subtitle_and_metadata():
+    from ave.agent.domains import Domain
+
+    assert Domain.SUBTITLE in TRANSCRIPTIONIST_ROLE.owned_domains
+    assert Domain.METADATA in TRANSCRIPTIONIST_ROLE.owned_domains
