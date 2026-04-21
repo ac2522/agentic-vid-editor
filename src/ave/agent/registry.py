@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Any, Callable, get_type_hints
 
 from ave.agent.dependencies import DependencyGraph, SessionState
+from ave.agent.domains import Domain
 
 
 class RegistryError(Exception):
@@ -192,6 +193,7 @@ class ToolRegistry:
         tags: list[str] | None = None,
         modifies_timeline: bool = False,
         namespace: str = "ave",
+        domains_touched: tuple[Domain, ...] | None = None,
     ) -> Callable:
         """Decorator to register a tool function.
 
@@ -201,41 +203,102 @@ class ToolRegistry:
                 community plugins use "community".
             modifies_timeline: If True, this tool modifies the GES timeline
                 and should trigger end-of-turn verification.
+            domains_touched: Canonical Domain tuple for scope enforcement.
+                When omitted, inferred from domain via Domain.from_string.
         """
         req = requires or []
         prov = provides or []
         tag_list = tags or []
+        resolved_domains: tuple[Domain, ...] | None = (
+            tuple(domains_touched) if domains_touched is not None else None
+        )
 
         def decorator(func: Callable) -> Callable:
             short_name = func.__name__
-            full_name = f"{namespace}:{domain}.{short_name}"
-
-            if full_name in self._ns_to_short:
-                raise RegistryError(f"Tool already registered: {full_name}")
-            # For backward compat: if short name exists AND no namespace
-            # collision, allow it. Otherwise, use unique short name.
-            storage_key = short_name
-            if storage_key in self._tools:
-                # Short name collision — use full name as storage key
-                storage_key = full_name
-
-            self._tools[storage_key] = {
-                "func": func,
-                "domain": domain,
-                "requires": req,
-                "provides": prov,
-                "tags": tag_list,
-                "modifies_timeline": modifies_timeline,
-                "namespace": namespace,
-                "full_name": full_name,
-                "short_name": short_name,
-            }
-            self._ns_to_short[full_name] = storage_key
-            self._short_names.setdefault(short_name, []).append(full_name)
-            self._dep_graph.add_tool(storage_key, requires=req, provides=prov)
+            self._register_impl(
+                short_name=short_name,
+                func=func,
+                domain=domain,
+                requires=req,
+                provides=prov,
+                tags=tag_list,
+                modifies_timeline=modifies_timeline,
+                namespace=namespace,
+                domains_touched=resolved_domains,
+            )
             return func
 
         return decorator
+
+    def register(
+        self,
+        name: str,
+        func: Callable,
+        *,
+        domain: str,
+        requires: list[str] | None = None,
+        provides: list[str] | None = None,
+        tags: list[str] | None = None,
+        modifies_timeline: bool = False,
+        namespace: str = "ave",
+        domains_touched: tuple[Domain, ...] | None = None,
+    ) -> None:
+        """Imperative tool registration (alternative to the @tool decorator).
+
+        Useful for tests and dynamic registration scenarios.
+        """
+        resolved_domains: tuple[Domain, ...] | None = (
+            tuple(domains_touched) if domains_touched is not None else None
+        )
+        self._register_impl(
+            short_name=name,
+            func=func,
+            domain=domain,
+            requires=requires or [],
+            provides=provides or [],
+            tags=tags or [],
+            modifies_timeline=modifies_timeline,
+            namespace=namespace,
+            domains_touched=resolved_domains,
+        )
+
+    def _register_impl(
+        self,
+        *,
+        short_name: str,
+        func: Callable,
+        domain: str,
+        requires: list[str],
+        provides: list[str],
+        tags: list[str],
+        modifies_timeline: bool,
+        namespace: str,
+        domains_touched: tuple[Domain, ...] | None,
+    ) -> None:
+        """Shared registration body used by both @tool and register()."""
+        full_name = f"{namespace}:{domain}.{short_name}"
+
+        if full_name in self._ns_to_short:
+            raise RegistryError(f"Tool already registered: {full_name}")
+        storage_key = short_name
+        if storage_key in self._tools:
+            storage_key = full_name
+
+        self._tools[storage_key] = {
+            "func": func,
+            "domain": domain,
+            "requires": requires,
+            "provides": provides,
+            "tags": tags,
+            "modifies_timeline": modifies_timeline,
+            "namespace": namespace,
+            "full_name": full_name,
+            "short_name": short_name,
+            "domains_touched": domains_touched,
+        }
+        self._ns_to_short[full_name] = storage_key
+        self._short_names.setdefault(short_name, []).append(full_name)
+        self._dep_graph.add_tool(storage_key, requires=requires, provides=provides)
 
     def register_stub(
         self,
@@ -383,6 +446,25 @@ class ToolRegistry:
         """Check if a tool modifies the timeline (for verification gating)."""
         resolved = self._resolve_name(tool_name)
         return self._tools[resolved].get("modifies_timeline", False)
+
+    def get_tool_domains_touched(self, tool_name: str) -> tuple[Domain, ...]:
+        """Return the canonical Domain tuple for a registered tool.
+
+        Resolution order:
+        1. Explicit `domains_touched` declared at registration time.
+        2. `Domain.from_string(info["domain"])` — works for standard AVE domains.
+        3. Empty tuple — for tools with unclassifiable domain strings. Scope
+           enforcement treats this as "no constraint" to preserve backward compat.
+        """
+        resolved = self._resolve_name(tool_name)
+        info = self._tools[resolved]
+        existing = info.get("domains_touched")
+        if existing:
+            return tuple(existing)
+        try:
+            return (Domain.from_string(info["domain"]),)
+        except ValueError:
+            return ()
 
     @property
     def tool_count(self) -> int:

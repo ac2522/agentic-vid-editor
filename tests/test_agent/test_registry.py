@@ -369,3 +369,53 @@ def test_registry_search_tag_boosts_score(registry: ToolRegistry) -> None:
     # than concatenate which has no "clip" match
     results = registry.search_tools("clip")
     assert results[0].name == "trim"
+
+
+def test_register_with_domains_touched():
+    """Tool registration accepts an optional domains_touched parameter."""
+    from ave.agent.registry import ToolRegistry
+    from ave.agent.domains import Domain
+
+    reg = ToolRegistry()
+
+    def add_watermark(clip_id: str) -> str:
+        """Add a watermark to a clip."""
+        return clip_id
+
+    reg.register(
+        "add_watermark",
+        add_watermark,
+        domain="video",
+        domains_touched=(Domain.VIDEO, Domain.METADATA),
+    )
+
+    assert reg.get_tool_domains_touched("add_watermark") == (Domain.VIDEO, Domain.METADATA)
+
+
+def test_domains_touched_defaults_to_legacy_domain_mapping():
+    """When domains_touched is omitted, fall back to from_string(domain)."""
+    from ave.agent.registry import ToolRegistry
+    from ave.agent.domains import Domain
+
+    reg = ToolRegistry()
+
+    def dummy() -> None:
+        """Dummy."""
+
+    reg.register("dummy", dummy, domain="editing")
+    # 'editing' -> TIMELINE_STRUCTURE via Domain.from_string
+    assert reg.get_tool_domains_touched("dummy") == (Domain.TIMELINE_STRUCTURE,)
+
+
+def test_decorator_accepts_domains_touched():
+    """The @tool(...) decorator also accepts domains_touched."""
+    from ave.agent.registry import ToolRegistry
+    from ave.agent.domains import Domain
+
+    reg = ToolRegistry()
+
+    @reg.tool(domain="audio", domains_touched=(Domain.AUDIO,))
+    def set_volume(clip_id: str, db: float) -> None:
+        """Set clip volume."""
+
+    assert reg.get_tool_domains_touched("set_volume") == (Domain.AUDIO,)
