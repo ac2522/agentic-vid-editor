@@ -38,7 +38,10 @@ As the feature catalog (`docs/feature-catalog/`) grows and tool count increases,
 | Concurrency model | Interleaved serialization + domain-partitioned scopes | Uses existing lock; structural conflict prevention |
 | Cross-agent visibility | Append-only activity log, not git branches | Solves the stated need without merge complexity |
 | Harness framework | Built on Inspect AI | MCP-native, agent-first, Apache 2.0, actively maintained (UK AISI) |
-| VLM judge | Claude multimodal default, VideoScore optional local | Reuses existing Anthropic SDK dep; local backend for cost/privacy |
+| Judge strategy | Multi-model ensemble, routed by rubric dimension (static/still/temporal) | Correctly handles temporal artifacts (motion blur, grain, animation) via video-native models; ensemble reduces model-specific bias |
+| CI render hardware | Self-hosted runner on user's 4090; enables local video-native VLM judges at zero marginal cost | Avoids GitHub hosted GPU runner cost; unlocks local Qwen3-VL / Molmo 2 / VideoScore |
+| Rung C gating | VLM failures authoritative; golden-scenario passes flagged "pending human review"; 10% random sample of other passes flagged too | Humans focus review effort on creative-intent questions; VLM catches temporal artifacts |
+| Scenario governance | Light at creation (PR template) + metric-driven pruning of non-discriminating scenarios after 90 days | Prevents bit-rot without heavy process early |
 | Scenario authoring format | YAML (our schema) → Inspect Dataset adapter | Human-authorable, diffable, tool-agnostic |
 
 ## Shared Foundation
@@ -129,8 +132,16 @@ src/ave/harness/
 │   └── vlm_judge.py             # Claude VLM with VBench-2.0-style rubric
 ├── judges/
 │   ├── _protocol.py             # JudgeBackend Protocol (swappable)
-│   ├── claude_vlm.py            # default backend (requires anthropic)
-│   └── videoscore.py            # optional local backend (requires torch+transformers)
+│   ├── ensemble.py              # Routes dimensions to tier (static/still/temporal); aggregates via majority/minority-veto
+│   ├── router.py                # Per-dimension capability table (which judges handle what)
+│   ├── deterministic.py         # FFmpeg/ffprobe-based checks for static dimensions (duration, resolution, RMS)
+│   ├── claude_vlm.py            # Claude Haiku/Sonnet/Opus via anthropic SDK — still-composition tier
+│   ├── gemini_vlm.py            # Gemini 3.1 Pro/Flash via google-genai — video-native tier
+│   ├── kimi_vlm.py              # Kimi K2.6 via moonshot/openai-compat API — video-native tier
+│   ├── glm_vlm.py               # GLM-4.6/GLM-5 via zhipu API — still-composition tier (video TBD)
+│   ├── qwen_vl_local.py         # Qwen3-VL local via transformers — video-native tier (runs on 4090)
+│   ├── molmo2_local.py          # Molmo 2 local via transformers — video-native tier (runs on 4090)
+│   └── videoscore_local.py      # VideoScore (Mantis-8B) local — video-quality scoring tier
 ├── artifacts/                   # rendered outputs + judge traces (Rung C)
 │   └── store.py
 ├── cli.py                       # `ave-harness run <scenario_id> [--tier plan|execute|render]`
@@ -157,14 +168,39 @@ harness = [
     "inspect-ai>=0.3",
     "pyyaml>=6.0",
 ]
+judge-cloud = [
+    "anthropic>=0.43",          # Claude Haiku/Sonnet/Opus
+    "google-genai>=0.8",        # Gemini 3.1 Pro/Flash
+    # Kimi K2.6 via openai-compat (moonshot endpoint) — no extra dep
+    # GLM via zhipu-compat (openai SDK) — no extra dep
+]
 judge-local = [
-    # VideoScore local backend
-    "torch>=2.1",
-    "transformers>=4.49",
+    "torch>=2.1",               # local VLMs on user's 4090
+    "transformers>=4.49",       # Qwen3-VL, Molmo 2, VideoScore
 ]
 ```
 
-Existing `[web]` extra already covers `anthropic` for the default Claude VLM judge.
+Existing `[web]` extra already covers `anthropic`; `judge-cloud` duplicates the pin to make the harness stand-alone.
+
+### Judge Routing Policy
+
+The ensemble router classifies each rubric dimension into one of three categories based on what is being measured:
+
+| Dimension type | Examples | Judge tier | Default ensemble |
+|---|---|---|---|
+| **Static / deterministic** | duration, resolution, aspect ratio, audio RMS/LUFS, caption presence, format | `deterministic` (no VLM) | ffprobe + simple metrics |
+| **Still-composition** | framing, caption legibility, text readability, color palette, visual balance | `still` (frame-sampling VLMs OK) | 2 of: Claude Haiku 4.5, Claude Sonnet 4.6, GLM-4.6 |
+| **Temporal / motion** | pacing, cut rhythm, motion blur quality, film grain evolution, flicker, animation smoothness | `temporal` (video-native only) | 1 local + 1 cloud: (Qwen3-VL or Molmo 2) + (Gemini 3.1 Pro or Kimi K2.6) |
+
+Aggregation rules:
+- **Majority vote** (default) — ≥2 of 3 judges must agree for a pass.
+- **Minority veto** (safety-critical dimensions, e.g., "content preservation" on filler-word-trim) — any single judge failure fails the dimension.
+- **Disagreement logging** — when judges disagree, the full trace is saved to the artifact store and surfaced in the human review queue as high-value calibration data.
+
+Cost policy:
+- Local video-native judges (Qwen3-VL, Molmo 2, VideoScore) run on every applicable scenario at zero marginal cost on the self-hosted 4090 runner.
+- Cloud judges are called for ensemble redundancy; rate-limited per scenario (max 2 cloud judges per run) to cap budget.
+- Rotation across cloud judges over time mitigates any single provider's model drift.
 
 ## Scenario Schema (YAML)
 
@@ -337,12 +373,19 @@ Rendered output and VLM judge.
 - Wire Opik feedback loop (`optimize/` consumes harness failures).
 - Expand VBench rubric taxonomy as needed.
 
-## Open Questions / Deferred
+## Resolved Decisions (moved from Open Questions)
 
-- **Cost of nightly Rung C runs:** estimate LLM judge cost per scenario × number of scenarios × runs/week. If cost is prohibitive, switch Claude VLM default to Haiku or VideoScore local and reserve Claude Opus/Sonnet for release gates.
-- **Render hardware for CI:** Rung C needs GPU. Open question: GitHub Actions GPU runner budget vs. self-hosted runner. Defer to Phase 4 planning.
-- **Human-in-the-loop gating:** should Rung C render artifacts require human review for golden scenarios, not just VLM judge? Recommend adding a "human-approved" flag to artifact store that captures spot-check verdicts over time — deferred to Phase 4+1.
-- **Scenario library governance:** who authors scenarios, who reviews, how do we prevent trivial-scenario drift. Recommend a PR template for scenario additions and a nightly report that flags scenarios with ≥95% pass rate over 30 days (suspicious — probably not testing anything).
+- **Judge strategy:** Multi-model ensemble routed per rubric dimension. Static checks deterministic (no VLM), still-composition served by frame-sampling VLMs (Claude, GLM), temporal/motion served by video-native models (Gemini 3.1 Pro, Kimi K2.6, Qwen3-VL, Molmo 2, VideoScore). Majority vote default, minority-veto for safety-critical dimensions. Two-judge minimum per dimension.
+- **CI render hardware:** Self-hosted GitHub Actions runner on user's RTX 4090 machine. Enables local video-native judges at zero marginal cost; cloud judges called sparingly for ensemble redundancy.
+- **Human-in-the-loop gating:** Asymmetric — Rung C failures are authoritative (no override). Golden-scenario passes flagged "pending human review" in artifact store. Additional 10% random sample of non-golden passes flagged for calibration data. Disagreements between judges auto-promoted to review queue.
+- **Scenario library governance:** Light at creation (PR template with "what behavior does this scenario lock in?" field) + discrimination-power metric in Phase 4+ (scenarios that never fail anything over 90 days get auto-archived, must be explicitly resurrected).
+
+## Open Questions (remaining)
+
+- **Judge model drift:** cloud VLM providers update models periodically without notice, which can shift scores. Mitigation: pin to specific model versions when APIs allow; log model version in judge traces; re-run a calibration suite monthly.
+- **Scenario cross-contamination:** if the same model serves as both the agent and a judge member, there's a risk of correlated errors. Enforce: agent model ≠ any judge in its own scenario's ensemble. Logged as invariant.
+- **Self-hosted runner availability:** if the user's 4090 machine is offline, Rung C fails to run entirely. Consider a fallback policy (skip-with-warning vs. fail-suite).
+- **VBench-2.0 rubric adaptation:** VBench is designed for generated video (text-to-video), not edited video. Some dimensions transfer directly (temporal stability, subject consistency), others don't (prompt adherence from scratch). Phase 4 includes building an AVE-specific rubric taxonomy influenced by but not copying VBench.
 
 ## Success Criteria
 
