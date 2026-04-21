@@ -15,8 +15,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from ave.agent.registry import ToolRegistry
 from ave.agent.dependencies import SessionState
+from ave.agent.errors import ScopeViolationError
+from ave.agent.registry import ToolRegistry
+from ave.agent.roles import AgentRole
 from ave.agent.transitions import ToolTransitionGraph
 from ave.project.snapshots import SnapshotManager
 
@@ -167,13 +169,33 @@ class EditingSession:
     def snapshot_manager(self) -> SnapshotManager | None:
         return self._snapshot_manager
 
-    def call_tool(self, tool_name: str, params: dict) -> Any:
+    def call_tool(
+        self,
+        tool_name: str,
+        params: dict,
+        *,
+        agent_role: AgentRole | None = None,
+    ) -> Any:
         """Execute a tool with state tracking, snapshots, and history recording.
 
         Thread-safe: serialized via lock for concurrent subagent safety.
         If a snapshot manager is configured and a project is loaded, captures
         a snapshot before execution. On failure, auto-restores the latest snapshot.
+
+        When ``agent_role`` is provided, the tool's declared ``domains_touched``
+        must all be within the role's ``owned_domains``; otherwise
+        ``ScopeViolationError`` is raised before execution.
         """
+        if agent_role is not None:
+            touched = self._registry.get_tool_domains_touched(tool_name)
+            out_of_scope = [d for d in touched if d not in agent_role.owned_domains]
+            if out_of_scope:
+                raise ScopeViolationError(
+                    f"Role {agent_role.name!r} cannot call {tool_name!r}: "
+                    f"tool touches {[d.value for d in out_of_scope]}, "
+                    f"role owns {[d.value for d in agent_role.owned_domains]}"
+                )
+
         with self._lock:
             provisions = self._registry.get_tool_provisions(tool_name)
 
