@@ -121,6 +121,23 @@ async def _handle_chat_ws(request: web.Request) -> web.WebSocketResponse:
             elif parsed.get("type") == "cancel":
                 if chat_session is not None:
                     chat_session.cancel()
+            elif parsed.get("type") in ("undo", "redo"):
+                from ave.web.api import redo_response, undo_response
+                from ave.web.chat import format_timeline_rollback
+
+                if chat_session is None:
+                    await ws.send_json(format_error("Agent not available"))
+                    continue
+
+                editing_session = chat_session._orchestrator.session
+                turn_id = parsed.get("turn_id", "")
+                handler = undo_response if parsed["type"] == "undo" else redo_response
+                status, body = handler(editing_session, turn_id)
+                await ws.send_json(body)
+                if status == 200:
+                    await ws.send_json(
+                        format_timeline_rollback(turn_id=turn_id, direction=parsed["type"])
+                    )
             else:
                 await ws.send_json(format_error(f"Unknown message type: {parsed.get('type')}"))
         elif msg.type in (web.WSMsgType.ERROR, web.WSMsgType.CLOSE):

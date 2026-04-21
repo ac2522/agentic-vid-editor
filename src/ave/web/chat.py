@@ -73,6 +73,14 @@ def format_connected(session_token: str) -> dict:
     return {"type": "connected", "session_token": session_token}
 
 
+def format_timeline_rollback(*, turn_id: str, direction: str) -> dict:
+    """Format a state-rollback notification for the client.
+
+    direction: "undo" or "redo"
+    """
+    return {"type": "timeline_rollback", "turn_id": turn_id, "direction": direction}
+
+
 # ---------------------------------------------------------------------------
 # ChatSession — agentic loop with Anthropic streaming API
 # ---------------------------------------------------------------------------

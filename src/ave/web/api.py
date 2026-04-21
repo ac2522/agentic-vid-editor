@@ -10,6 +10,8 @@ import json
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from ave.agent.session import EditingSession, SessionError
+
 if TYPE_CHECKING:
     from ave.web.timeline_model import TimelineModel
 
@@ -49,3 +51,29 @@ def get_assets_response(registry_path: Path) -> dict:
         )
 
     return {"assets": assets}
+
+
+def undo_response(session: EditingSession, turn_id: str) -> tuple[int, dict]:
+    """Pure handler: execute undo on a session and return (status_code, response_body)."""
+    if not turn_id:
+        return 400, {"ok": False, "error": "missing turn_id"}
+    try:
+        session.undo_turn(turn_id)
+    except KeyError:
+        return 404, {"ok": False, "error": "unknown turn"}
+    except SessionError as exc:
+        return 400, {"ok": False, "error": str(exc)}
+    return 200, {"ok": True, "turn_id": turn_id, "direction": "undo"}
+
+
+def redo_response(session: EditingSession, turn_id: str) -> tuple[int, dict]:
+    """Pure handler: execute redo on a session and return (status_code, response_body)."""
+    if not turn_id:
+        return 400, {"ok": False, "error": "missing turn_id"}
+    try:
+        session.redo_turn(turn_id)
+    except KeyError:
+        return 404, {"ok": False, "error": "unknown turn"}
+    except SessionError as exc:
+        return 400, {"ok": False, "error": str(exc)}
+    return 200, {"ok": True, "turn_id": turn_id, "direction": "redo"}
