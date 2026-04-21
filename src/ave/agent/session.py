@@ -300,6 +300,48 @@ class EditingSession:
                 f"(source assets under {source_root} are write-protected)"
             )
 
+    def begin_turn(self, turn_id: str) -> None:
+        """Capture a pre-turn checkpoint. Call once at the start of a user turn."""
+        if self._project_path is None or self._snapshot_manager is None:
+            return  # silently no-op when project not loaded
+        self._snapshot_manager.capture_turn_checkpoint(
+            xges_path=self._project_path,
+            turn_id=turn_id,
+            provisions=self._state.provisions,
+        )
+
+    def end_turn(self, turn_id: str) -> None:
+        """Capture a post-turn checkpoint for redo. Call once after the agent finishes."""
+        if self._project_path is None or self._snapshot_manager is None:
+            return
+        self._snapshot_manager.capture_post_turn(
+            xges_path=self._project_path,
+            turn_id=turn_id,
+            provisions=self._state.provisions,
+        )
+
+    def undo_turn(self, turn_id: str) -> None:
+        """Roll back to the pre-turn checkpoint identified by turn_id."""
+        if self._project_path is None or self._snapshot_manager is None:
+            raise SessionError("Cannot undo: no project loaded or no snapshot manager")
+        _, provs = self._snapshot_manager.rollback_to_turn(
+            turn_id=turn_id,
+            xges_path=self._project_path,
+        )
+        self._state.reset()
+        self._state.add(*provs)
+
+    def redo_turn(self, turn_id: str) -> None:
+        """Re-apply the post-turn checkpoint identified by turn_id."""
+        if self._project_path is None or self._snapshot_manager is None:
+            raise SessionError("Cannot redo: no project loaded or no snapshot manager")
+        _, provs = self._snapshot_manager.redo_turn(
+            turn_id=turn_id,
+            xges_path=self._project_path,
+        )
+        self._state.reset()
+        self._state.add(*provs)
+
     def undo_last(self) -> ToolCall | None:
         """Remove last tool call from history. Returns the removed call.
 
