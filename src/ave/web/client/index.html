@@ -15,6 +15,12 @@
   <main id="app">
     <!-- Left: Chat panel -->
     <section id="chat-panel">
+      <div id="chat-header">
+        <div id="undo-controls">
+          <button id="undo-btn" title="Undo last turn (Ctrl/Cmd+Z)" disabled>&#x21B6; Undo</button>
+          <button id="redo-btn" title="Redo turn (Ctrl/Cmd+Shift+Z)" disabled>&#x21B7; Redo</button>
+        </div>
+      </div>
       <div id="chat-messages"></div>
       <div id="chat-input-area">
         <textarea id="chat-input" placeholder="Describe an edit..." rows="2"></textarea>

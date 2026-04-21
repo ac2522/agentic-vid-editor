@@ -6,9 +6,29 @@
   var messagesEl = document.getElementById('chat-messages');
   var inputEl = document.getElementById('chat-input');
   var sendBtn = document.getElementById('chat-send');
+  var undoBtn = document.getElementById('undo-btn');
+  var redoBtn = document.getElementById('redo-btn');
   var ws = null;
   var currentAgentBubble = null;
   var processing = false;
+
+  // Turn tracking for undo/redo. The server emits `checkpoint_id` in the
+  // `done` event for turns that produced a valid checkpoint.
+  var undoStack = [];
+  var redoStack = [];
+
+  function refreshUndoRedoButtons() {
+    if (undoBtn) undoBtn.disabled = undoStack.length === 0;
+    if (redoBtn) redoBtn.disabled = redoStack.length === 0;
+  }
+
+  function renderRollbackMarker(turnId, direction) {
+    var el = document.createElement('div');
+    el.className = 'msg rollback';
+    el.textContent = (direction === 'undo' ? '↶ undone: ' : '↷ redone: ') + turnId;
+    messagesEl.appendChild(el);
+    scrollToBottom();
+  }
 
   function connect() {
     var proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -64,6 +84,18 @@
         case 'done':
           currentAgentBubble = null;
           setProcessing(false);
+          if (msg.checkpoint_id) {
+            undoStack.push(msg.checkpoint_id);
+            redoStack = [];
+            refreshUndoRedoButtons();
+          }
+          break;
+
+        case 'timeline_rollback':
+          renderRollbackMarker(msg.turn_id, msg.direction);
+          if (window.AVE.timeline) {
+            window.AVE.timeline.refresh();
+          }
           break;
 
         case 'error':
@@ -137,6 +169,42 @@
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       sendMessage();
+    }
+  });
+
+  if (undoBtn) {
+    undoBtn.addEventListener('click', function() {
+      var turnId = undoStack.pop();
+      if (!turnId) return;
+      redoStack.push(turnId);
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'undo', turn_id: turnId }));
+      }
+      refreshUndoRedoButtons();
+    });
+  }
+
+  if (redoBtn) {
+    redoBtn.addEventListener('click', function() {
+      var turnId = redoStack.pop();
+      if (!turnId) return;
+      undoStack.push(turnId);
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'redo', turn_id: turnId }));
+      }
+      refreshUndoRedoButtons();
+    });
+  }
+
+  document.addEventListener('keydown', function(e) {
+    var mod = navigator.platform.indexOf('Mac') !== -1 ? e.metaKey : e.ctrlKey;
+    if (!mod) return;
+    if (e.key.toLowerCase() === 'z' && !e.shiftKey) {
+      e.preventDefault();
+      if (undoBtn && !undoBtn.disabled) undoBtn.click();
+    } else if (e.key.toLowerCase() === 'z' && e.shiftKey) {
+      e.preventDefault();
+      if (redoBtn && !redoBtn.disabled) redoBtn.click();
     }
   });
 

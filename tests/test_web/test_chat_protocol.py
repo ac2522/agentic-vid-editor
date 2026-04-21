@@ -84,6 +84,14 @@ class TestFormatDone:
         result = format_done(0)
         assert result["turn_id"] == 0
 
+    def test_with_checkpoint_id(self):
+        result = format_done(42, checkpoint_id="turn-abc")
+        assert result == {"type": "done", "turn_id": 42, "checkpoint_id": "turn-abc"}
+
+    def test_without_checkpoint_id_omits_field(self):
+        result = format_done(42)
+        assert "checkpoint_id" not in result
+
 
 class TestFormatError:
     def test_structure(self):

@@ -10,6 +10,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import uuid
 
 from ave.agent.state_sync import build_state_summary
 
@@ -53,9 +54,17 @@ def format_timeline_updated() -> dict:
     return {"type": "timeline_updated"}
 
 
-def format_done(turn_id: int) -> dict:
-    """Format an end-of-turn message."""
-    return {"type": "done", "turn_id": turn_id}
+def format_done(turn_id: int, checkpoint_id: str | None = None) -> dict:
+    """Format an end-of-turn message.
+
+    ``turn_id`` is the orchestrator's monotonic turn counter (legacy).
+    ``checkpoint_id`` is the session-level turn checkpoint identifier the
+    client uses to request undo/redo.
+    """
+    payload: dict = {"type": "done", "turn_id": turn_id}
+    if checkpoint_id is not None:
+        payload["checkpoint_id"] = checkpoint_id
+    return payload
 
 
 def format_error(message: str) -> dict:
@@ -101,6 +110,7 @@ class ChatSession:
         self._processing = False
         self._cancel_event = asyncio.Event()
         self._last_summary_timestamp: float = 0.0
+        self._current_checkpoint_id: str | None = None
 
     def _prepare_user_content(self, text: str) -> str:
         """Prefix the user's message with a state summary covering activity since the last turn.
@@ -131,13 +141,32 @@ class ChatSession:
             return
         self._processing = True
         self._cancel_event.clear()
+
+        checkpoint_id = "turn-" + uuid.uuid4().hex
+        session = getattr(self._orchestrator, "session", None)
+        captured = False
+        if session is not None:
+            try:
+                session.begin_turn(checkpoint_id)
+                captured = True
+            except Exception:
+                logger.debug("begin_turn failed — continuing without checkpoint", exc_info=True)
+
+        self._current_checkpoint_id = checkpoint_id if captured else None
+
         try:
             await self._agentic_loop(ws, text)
+            if session is not None and captured:
+                try:
+                    session.end_turn(checkpoint_id)
+                except Exception:
+                    logger.debug("end_turn failed", exc_info=True)
         except Exception as e:
             logger.exception("Error in agentic loop")
             await ws.send_json(format_error(str(e)))
         finally:
             self._processing = False
+            self._current_checkpoint_id = None
 
     def cancel(self) -> None:
         """Signal the running loop to stop after the current step."""
@@ -151,7 +180,7 @@ class ChatSession:
             import anthropic
         except ImportError:
             await ws.send_json(format_error("anthropic package not installed"))
-            await ws.send_json(format_done(self._orchestrator.turn_count))
+            await ws.send_json(format_done(self._orchestrator.turn_count, self._current_checkpoint_id))
             return
 
         self._messages.append({"role": "user", "content": self._prepare_user_content(text)})
@@ -162,7 +191,7 @@ class ChatSession:
 
         while True:
             if self._cancel_event.is_set():
-                await ws.send_json(format_done(self._orchestrator.turn_count))
+                await ws.send_json(format_done(self._orchestrator.turn_count, self._current_checkpoint_id))
                 return
 
             tool_calls: list[dict] = []
@@ -182,7 +211,7 @@ class ChatSession:
             self._messages.append({"role": "assistant", "content": response.content})
 
             if response.stop_reason != "tool_use":
-                await ws.send_json(format_done(self._orchestrator.turn_count))
+                await ws.send_json(format_done(self._orchestrator.turn_count, self._current_checkpoint_id))
                 return
 
             # Execute tool calls in executor (they may block)
