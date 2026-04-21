@@ -23,6 +23,7 @@ class Snapshot:
     xges_content: str
     provisions: frozenset[str]
     tool_name: str | None = None
+    turn_id: str | None = None
 
 
 @dataclass(frozen=True)
@@ -145,6 +146,82 @@ class SnapshotManager:
             if s.snapshot_id == snapshot_id:
                 return s
         raise KeyError(f"Snapshot not found: {snapshot_id}")
+
+    def capture_turn_checkpoint(
+        self,
+        xges_path: Path,
+        turn_id: str,
+        provisions: frozenset[str],
+    ) -> Snapshot:
+        """Capture a pre-turn checkpoint (state before the user's turn runs)."""
+        while len(self._snapshots) >= self._max_snapshots:
+            evicted = self._snapshots.pop(0)
+            self._cleanup_persisted(evicted.snapshot_id)
+
+        content = Path(xges_path).read_text()
+        snap = Snapshot(
+            snapshot_id=str(uuid.uuid4()),
+            timestamp=time.time(),
+            label=f"turn_checkpoint:{turn_id}",
+            xges_content=content,
+            provisions=frozenset(provisions),
+            tool_name=None,
+            turn_id=turn_id,
+        )
+        self._snapshots.append(snap)
+        if self._persist_dir is not None:
+            (self._persist_dir / f"{snap.snapshot_id}.xges").write_text(content)
+        return snap
+
+    def capture_post_turn(
+        self,
+        xges_path: Path,
+        turn_id: str,
+        provisions: frozenset[str],
+    ) -> Snapshot:
+        """Capture the post-turn state (for redo)."""
+        while len(self._snapshots) >= self._max_snapshots:
+            evicted = self._snapshots.pop(0)
+            self._cleanup_persisted(evicted.snapshot_id)
+
+        content = Path(xges_path).read_text()
+        snap = Snapshot(
+            snapshot_id=str(uuid.uuid4()),
+            timestamp=time.time(),
+            label=f"post_turn:{turn_id}",
+            xges_content=content,
+            provisions=frozenset(provisions),
+            tool_name=None,
+            turn_id=turn_id,
+        )
+        self._snapshots.append(snap)
+        if self._persist_dir is not None:
+            (self._persist_dir / f"{snap.snapshot_id}.xges").write_text(content)
+        return snap
+
+    def rollback_to_turn(
+        self,
+        turn_id: str,
+        xges_path: Path,
+    ) -> tuple[Snapshot, frozenset[str]]:
+        """Restore the pre-turn checkpoint (undo)."""
+        for s in self._snapshots:
+            if s.turn_id == turn_id and s.label.startswith("turn_checkpoint:"):
+                Path(xges_path).write_text(s.xges_content)
+                return s, s.provisions
+        raise KeyError(f"No turn checkpoint for {turn_id!r}")
+
+    def redo_turn(
+        self,
+        turn_id: str,
+        xges_path: Path,
+    ) -> tuple[Snapshot, frozenset[str]]:
+        """Restore the post-turn checkpoint (redo)."""
+        for s in self._snapshots:
+            if s.turn_id == turn_id and s.label.startswith("post_turn:"):
+                Path(xges_path).write_text(s.xges_content)
+                return s, s.provisions
+        raise KeyError(f"No post-turn checkpoint for {turn_id!r}")
 
     def _cleanup_persisted(self, snapshot_id: str) -> None:
         """Remove persisted file for a snapshot, if it exists."""
