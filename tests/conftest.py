@@ -111,6 +111,7 @@ def tmp_project(tmp_path: Path) -> Path:
 def _inspect_available() -> bool:
     try:
         import inspect_ai  # noqa: F401
+
         return True
     except ImportError:
         return False
@@ -119,6 +120,7 @@ def _inspect_available() -> bool:
 def _pyyaml_available() -> bool:
     try:
         import yaml  # noqa: F401
+
         return True
     except ImportError:
         return False
@@ -127,6 +129,4 @@ def _pyyaml_available() -> bool:
 requires_inspect = pytest.mark.skipif(
     not _inspect_available(), reason="inspect-ai not installed (pip install ave[harness])"
 )
-requires_pyyaml = pytest.mark.skipif(
-    not _pyyaml_available(), reason="pyyaml not installed"
-)
+requires_pyyaml = pytest.mark.skipif(not _pyyaml_available(), reason="pyyaml not installed")
