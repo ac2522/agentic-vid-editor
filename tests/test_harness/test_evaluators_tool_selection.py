@@ -76,3 +76,29 @@ def test_verdict_is_hashable_frozen_dataclass():
     v = Verdict(passed=True, reason="ok")
     assert v.passed is True
     assert v.reason == "ok"
+    assert v.rule == "ok"
+
+
+def test_duplicate_tools_do_not_affect_verdict():
+    """Duplicate tool names in called_tools are treated as a set for matching."""
+    v = evaluate_plan(
+        ["trim", "trim", "find_fillers"],
+        _plan(all_of=["trim", "find_fillers"]),
+    )
+    assert v.passed is True
+
+
+def test_empty_constraints_and_nonempty_called_pass():
+    """A plan with no required/forbidden/any_of and tools called -> pass."""
+    v = evaluate_plan(["anything"], _plan())
+    assert v.passed is True
+    assert v.rule == "ok"
+
+
+def test_rules_are_machine_readable():
+    """Each branch populates a distinct rule tag."""
+    assert evaluate_plan([], _plan(irrelevance=True)).rule == "irrelevance_ok"
+    assert evaluate_plan([], _plan()).rule == "irrelevance_required"
+    assert evaluate_plan(["x"], _plan(forbidden=["x"])).rule == "forbidden_tools"
+    assert evaluate_plan(["y"], _plan(all_of=["x"])).rule == "missing_all_of"
+    assert evaluate_plan(["x"], _plan(all_of=["x"], any_of=["y"])).rule == "missing_any_of"

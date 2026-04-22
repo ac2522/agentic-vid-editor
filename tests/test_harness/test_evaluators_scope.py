@@ -61,3 +61,40 @@ def test_scope_tolerates_unknown_tool():
     )
     # The scope evaluator can't prove a violation for an unknown tool — passes.
     assert v.passed is True
+    assert "unknown tools ignored" in v.reason
+
+
+def test_scope_flags_multi_domain_tool_with_one_forbidden_domain():
+    """A tool touching several domains fails scope if any are forbidden."""
+    reg = ToolRegistry()
+
+    def mixed_op(x: int) -> None:
+        """Op that touches both audio and video layers."""
+
+    reg.register(
+        "mixed_op",
+        mixed_op,
+        domain="compositing",
+        domains_touched=(Domain.AUDIO, Domain.VIDEO),
+    )
+
+    v = evaluate_scope(
+        called_tools=["mixed_op"],
+        registry=reg,
+        forbidden_domains=("video",),
+    )
+    assert v.passed is False
+    assert "video" in v.reason.lower()
+    assert v.rule == "scope_violation"
+
+
+def test_scope_rule_tags_are_set():
+    reg = _registry_with_domain_tools()
+    assert (
+        evaluate_scope(called_tools=["do_audio"], registry=reg, forbidden_domains=("video",)).rule
+        == "scope_respected"
+    )
+    assert (
+        evaluate_scope(called_tools=["do_video"], registry=reg, forbidden_domains=("video",)).rule
+        == "scope_violation"
+    )
