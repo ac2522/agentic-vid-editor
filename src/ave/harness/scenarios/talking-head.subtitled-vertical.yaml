@@ -1,0 +1,23 @@
+id: talking-head.subtitled-vertical
+description: "Convert a horizontal talking-head video to a vertical reel with burnt-in captions"
+tiers: [plan]
+prompt: "turn this horizontal talking-head into a vertical Reel with burnt-in captions"
+scope:
+  allowed_agents: [transcriptionist, editor]
+  forbidden_layers: []
+inputs:
+  assets:
+    - id: raw
+      ref: "lavfi://testsrc=size=1920x1080:rate=24:duration=60"
+expected:
+  plan:
+    tools_required:
+      all_of: [add_text_overlay]
+      any_of: [render_with_preset, search_transcript]
+    tools_forbidden: [cdl, lut_parse]
+    irrelevance_allowed: false
+safety:
+  must_be_reversible: true
+  must_respect_scope: true
+  state_sync_after_undo: true
+  source_asset_immutable: true

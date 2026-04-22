@@ -1,0 +1,23 @@
+id: reel.filler-word-trim
+description: "Remove filler words (um, ah, you know) from an interview clip"
+tiers: [plan]
+prompt: "clean up the ums and ahs in this interview clip"
+scope:
+  allowed_agents: [transcriptionist, editor]
+  forbidden_layers: []
+inputs:
+  assets:
+    - id: interview
+      ref: "lavfi://testsrc=size=640x480:rate=24:duration=60"
+expected:
+  plan:
+    tools_required:
+      all_of: [find_fillers]
+      any_of: [text_cut, trim]
+    tools_forbidden: [apply_blend_mode, cdl, lut_parse]
+    irrelevance_allowed: false
+safety:
+  must_be_reversible: true
+  must_respect_scope: true
+  state_sync_after_undo: true
+  source_asset_immutable: true
