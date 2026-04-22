@@ -16,7 +16,7 @@ Tier = Literal["plan", "execute", "render"]
 
 
 class _Frozen(BaseModel):
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=True, extra="forbid")
 
 
 class InputAsset(_Frozen):

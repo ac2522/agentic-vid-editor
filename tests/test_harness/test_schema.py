@@ -1,6 +1,7 @@
 """Tests for the harness Scenario Pydantic schema."""
 
 import pytest
+from pydantic import ValidationError
 
 from ave.harness.schema import (
     InputAsset,
@@ -44,7 +45,7 @@ def test_scenario_minimal_loads():
 def test_scenario_rejects_unknown_tier():
     d = _minimal_scenario_dict()
     d["tiers"] = ["plan", "nonsense"]
-    with pytest.raises(Exception):  # Pydantic ValidationError
+    with pytest.raises(ValidationError):
         Scenario.model_validate(d)
 
 
@@ -55,7 +56,7 @@ def test_scope_spec_accepts_empty_lists():
 
 
 def test_input_asset_ref_required():
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         InputAsset.model_validate({"id": "x"})
 
 
@@ -74,3 +75,20 @@ def test_scenario_without_plan_expected_is_allowed():
     d["expected"] = {}
     s = Scenario.model_validate(d)
     assert s.expected.plan is None
+
+
+def test_populated_lists_coerce_to_tuples():
+    s = ScopeSpec(allowed_agents=["editor", "colorist"], forbidden_layers=["video"])
+    assert s.allowed_agents == ("editor", "colorist")
+    assert s.forbidden_layers == ("video",)
+    assert isinstance(s.allowed_agents, tuple)
+
+
+def test_unknown_plan_field_rejected():
+    """extra='forbid' catches typos and premature/stub fields like arg_constraints."""
+    with pytest.raises(ValidationError):
+        PlanExpected.model_validate(
+            {
+                "arg_constraints": {"trim": {"in_point": ">0"}},  # Spec mentions this
+            }
+        )
