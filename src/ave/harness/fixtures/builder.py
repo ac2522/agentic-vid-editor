@@ -53,7 +53,9 @@ def build_lavfi_clip(
         "yuv420p",
         str(output_path),
     ]
-    result = subprocess.run(cmd, capture_output=True, text=True)
+    result = subprocess.run(
+        cmd, capture_output=True, text=True, timeout=120, encoding="utf-8", errors="replace"
+    )
     if result.returncode != 0:
         raise RuntimeError(
             f"ffmpeg lavfi build failed (exit {result.returncode}):\n"
