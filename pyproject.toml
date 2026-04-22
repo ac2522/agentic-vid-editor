@@ -35,6 +35,9 @@ harness = [
     "pyyaml>=6.0",
 ]
 
+[project.scripts]
+ave-harness = "ave.harness.cli:main"
+
 [build-system]
 requires = ["setuptools>=75.0"]
 build-backend = "setuptools.build_meta"
