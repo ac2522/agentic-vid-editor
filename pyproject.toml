@@ -30,6 +30,10 @@ web = [
     "aiohttp>=3.9",
     "anthropic>=0.43",
 ]
+harness = [
+    "inspect-ai>=0.3",
+    "pyyaml>=6.0",
+]
 
 [build-system]
 requires = ["setuptools>=75.0"]

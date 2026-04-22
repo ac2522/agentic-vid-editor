@@ -106,3 +106,27 @@ def tmp_project(tmp_path: Path) -> Path:
     (project / "transcriptions").mkdir(parents=True)
     (project / "exports").mkdir(parents=True)
     return project
+
+
+def _inspect_available() -> bool:
+    try:
+        import inspect_ai  # noqa: F401
+        return True
+    except ImportError:
+        return False
+
+
+def _pyyaml_available() -> bool:
+    try:
+        import yaml  # noqa: F401
+        return True
+    except ImportError:
+        return False
+
+
+requires_inspect = pytest.mark.skipif(
+    not _inspect_available(), reason="inspect-ai not installed (pip install ave[harness])"
+)
+requires_pyyaml = pytest.mark.skipif(
+    not _pyyaml_available(), reason="pyyaml not installed"
+)
