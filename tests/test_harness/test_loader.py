@@ -6,6 +6,9 @@ pytest.importorskip("yaml")
 
 from pathlib import Path
 
+import yaml
+from pydantic import ValidationError
+
 from ave.harness.loader import load_scenario_from_yaml
 from ave.harness.schema import Scenario
 
@@ -44,17 +47,24 @@ def test_load_valid_yaml(tmp_path: Path):
 def test_load_invalid_yaml_raises(tmp_path: Path):
     p = tmp_path / "bad.yaml"
     p.write_text("not: valid: scenario: schema")
-    with pytest.raises(Exception):
+    with pytest.raises(yaml.YAMLError):
         load_scenario_from_yaml(p)
 
 
 def test_load_missing_required_field(tmp_path: Path):
     p = tmp_path / "missing.yaml"
     p.write_text("id: x\n")  # missing tiers, prompt
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         load_scenario_from_yaml(p)
 
 
 def test_load_nonexistent_path(tmp_path: Path):
     with pytest.raises(FileNotFoundError):
         load_scenario_from_yaml(tmp_path / "nope.yaml")
+
+
+def test_load_non_dict_top_level_raises_value_error(tmp_path: Path):
+    p = tmp_path / "list.yaml"
+    p.write_text("- just\n- a\n- list\n")
+    with pytest.raises(ValueError):
+        load_scenario_from_yaml(p)
