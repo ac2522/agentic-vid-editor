@@ -129,3 +129,48 @@ async def test_scope_scorer_respects_forbidden_layers():
     )
     score_bad = await scope_scorer()(state_bad, Target("t"))
     assert score_bad.value == 0
+
+
+@requires_inspect
+@pytest.mark.asyncio
+async def test_scope_scorer_accepts_registry_override():
+    """scope_scorer accepts an optional registry for dependency injection."""
+    from inspect_ai.scorer import Target
+    from inspect_ai.solver import TaskState
+
+    from ave.agent.domains import Domain
+    from ave.agent.registry import ToolRegistry
+    from ave.harness.schema import Expected, Inputs, Scenario, ScopeSpec
+    from ave.harness.scorers.scope import scope_scorer
+
+    # Build a minimal registry with one tool that touches AUDIO.
+    reg = ToolRegistry()
+
+    def only_audio(x: int) -> None:
+        """Audio op."""
+
+    reg.register(
+        "only_audio",
+        only_audio,
+        domain="audio",
+        domains_touched=(Domain.AUDIO,),
+    )
+
+    scenario = Scenario(
+        id="t",
+        tiers=("plan",),
+        prompt="",
+        scope=ScopeSpec(forbidden_layers=("audio",)),
+        inputs=Inputs(),
+        expected=Expected(),
+    )
+    state = TaskState(
+        model="mockllm/mock",
+        sample_id="t",
+        epoch=0,
+        input="",
+        messages=[],
+        metadata={"scenario": scenario, "called_tools": ["only_audio"]},
+    )
+    score = await scope_scorer(registry=reg)(state, Target("t"))
+    assert score.value == 0  # audio was forbidden, only_audio called

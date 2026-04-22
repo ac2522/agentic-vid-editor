@@ -69,3 +69,76 @@ def test_plan_solver_is_decorated_solver():
     # Inspect AI solvers are callables (coroutines once awaited); verifying
     # it's callable avoids coupling to the internal Solver type.
     assert callable(s)
+
+
+@requires_inspect
+@pytest.mark.asyncio
+async def test_plan_solver_wires_expected_tools():
+    """When a scenario declares tool constraints, the solver exposes stubs for them."""
+    from inspect_ai.tool import ToolDef
+
+    from ave.harness.schema import (
+        Expected,
+        Inputs,
+        PlanExpected,
+        Scenario,
+        ScopeSpec,
+        ToolsRequired,
+    )
+    from ave.harness.solvers.plan import _tools_for_scenario
+
+    scenario = Scenario(
+        id="test",
+        tiers=("plan",),
+        prompt="",
+        scope=ScopeSpec(),
+        inputs=Inputs(),
+        expected=Expected(
+            plan=PlanExpected(
+                tools_required=ToolsRequired(all_of=("trim",), any_of=("text_cut",)),
+                tools_forbidden=("apply_blend_mode",),
+            )
+        ),
+    )
+    tools = _tools_for_scenario(scenario)
+    assert len(tools) == 3
+    # Tools union the all_of, any_of, and forbidden sets. ToolDef(t).name is
+    # the only stable way to recover the declared tool name from the wrapped
+    # callable returned by ToolDef.as_tool() in Inspect AI >= 0.3.
+    names = {ToolDef(t).name for t in tools}
+    assert names == {"trim", "text_cut", "apply_blend_mode"}
+
+
+@requires_inspect
+@pytest.mark.asyncio
+async def test_plan_solver_stub_tool_is_non_executing_and_callable():
+    """Each stub tool returns a short OK string and accepts arbitrary kwargs."""
+    from inspect_ai.tool import ToolDef
+
+    from ave.harness.schema import (
+        Expected,
+        Inputs,
+        PlanExpected,
+        Scenario,
+        ScopeSpec,
+        ToolsRequired,
+    )
+    from ave.harness.solvers.plan import _tools_for_scenario
+
+    scenario = Scenario(
+        id="test",
+        tiers=("plan",),
+        prompt="",
+        scope=ScopeSpec(),
+        inputs=Inputs(),
+        expected=Expected(
+            plan=PlanExpected(tools_required=ToolsRequired(all_of=("trim",))),
+        ),
+    )
+    tools = _tools_for_scenario(scenario)
+    assert len(tools) == 1
+    # Build a kwargs dict that matches the real trim parameter set; the stub
+    # should accept it and return a predictable confirmation string.
+    result = await tools[0](clip_duration_ns=1, in_ns=0, out_ns=1)
+    assert "trim" in result and "stub" in result
+    assert ToolDef(tools[0]).name == "trim"

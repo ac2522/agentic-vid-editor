@@ -1,7 +1,5 @@
 """Tests for the Scenario -> Inspect AI Dataset adapter."""
 
-import pytest
-
 from tests.conftest import requires_inspect
 from ave.harness.schema import (
     Expected,

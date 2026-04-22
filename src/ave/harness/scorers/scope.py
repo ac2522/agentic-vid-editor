@@ -22,8 +22,13 @@ def _shared_registry() -> ToolRegistry:
 
 
 @scorer(metrics=[])
-def scope_scorer() -> Scorer:
-    """Pass/fail based on whether called tools respect the scenario's forbidden_layers."""
+def scope_scorer(registry: ToolRegistry | None = None) -> Scorer:
+    """Pass/fail based on scope.
+
+    Uses the supplied ``registry`` (for dependency injection in tests), or
+    falls back to the default shared session registry.
+    """
+    effective_registry = registry
 
     async def score(state: TaskState, target: Target) -> Score:
         meta = state.metadata or {}
@@ -31,7 +36,7 @@ def scope_scorer() -> Scorer:
         called: list[str] = list(meta.get("called_tools", []))
         verdict = evaluate_scope(
             called_tools=called,
-            registry=_shared_registry(),
+            registry=effective_registry or _shared_registry(),
             forbidden_domains=scenario.scope.forbidden_layers,
         )
         return Score(

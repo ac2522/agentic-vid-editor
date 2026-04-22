@@ -2,8 +2,6 @@
 
 from pathlib import Path
 
-import pytest
-
 from tests.conftest import requires_inspect
 
 
