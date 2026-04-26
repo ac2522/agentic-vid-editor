@@ -14,7 +14,7 @@ import sys
 from typing import Sequence
 
 
-SUPPORTED_TIERS = ("plan", "execute")
+SUPPORTED_TIERS = ("plan", "execute", "render")
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -27,7 +27,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--tier",
         default="plan",
         choices=list(SUPPORTED_TIERS),
-        help="Evaluation tier: plan (tool selection) or execute (real tool execution)",
+        help="Evaluation tier: plan, execute, or render (full rendered MP4 + VLM judge)",
     )
     run.add_argument(
         "--model",
@@ -53,7 +53,11 @@ def cli_main(argv: Sequence[str] | None = None) -> int:
         from inspect_ai import eval as inspect_eval
         from inspect_ai.model import get_model
 
-        from ave.harness.task import execute_rung_task, plan_rung_task
+        from ave.harness.task import (
+            execute_rung_task,
+            plan_rung_task,
+            render_rung_task,
+        )
     except ImportError as exc:
         print(
             f"error: harness deps missing ({exc}). Install with `pip install ave[harness]`",
@@ -63,8 +67,10 @@ def cli_main(argv: Sequence[str] | None = None) -> int:
 
     if ns.tier == "plan":
         harness_task = plan_rung_task(scenario_file=ns.scenario_file)
-    else:
+    elif ns.tier == "execute":
         harness_task = execute_rung_task(scenario_file=ns.scenario_file)
+    else:
+        harness_task = render_rung_task(scenario_file=ns.scenario_file)
 
     model = get_model(ns.model)
     log_dir = ns.log_dir or "./logs"

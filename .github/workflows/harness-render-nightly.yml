@@ -1,0 +1,76 @@
+name: Harness Render Tier (Nightly)
+
+on:
+  schedule:
+    # 03:00 UTC every day
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+    inputs:
+      scenario:
+        description: "Specific scenario YAML to run (path under src/ave/harness/scenarios/)"
+        required: false
+        default: ""
+
+jobs:
+  render-tier:
+    name: Render tier (self-hosted GPU)
+    runs-on: [self-hosted, gpu]
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up venv with system packages
+        run: |
+          python3 -m venv --system-site-packages .venv
+          .venv/bin/pip install -e ".[harness]" --quiet
+          .venv/bin/pip install anthropic --quiet
+
+      - name: Verify harness module loads
+        run: |
+          .venv/bin/python -c "from ave.harness.task import render_rung_task; print('OK')"
+
+      - name: Run render-tier scorer tests (no API)
+        run: |
+          .venv/bin/python -m pytest \
+            tests/test_harness/test_scorers_vlm_judge.py \
+            tests/test_harness/test_judges_router.py \
+            tests/test_harness/test_judges_ensemble.py \
+            tests/test_harness/test_judges_deterministic.py \
+            tests/test_harness/test_artifacts_store.py \
+            -v --tb=short
+
+      - name: Run flagship scenarios at render tier
+        if: ${{ env.ANTHROPIC_API_KEY != '' }}
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          set +e
+          for scenario in src/ave/harness/scenarios/*.yaml; do
+            echo "=== running $scenario at render tier ==="
+            .venv/bin/ave-harness run \
+              --scenario-file "$scenario" \
+              --tier render \
+              --model anthropic/claude-sonnet-4-6 \
+              --log-dir "logs/$(basename $scenario .yaml)"
+          done
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: harness-render-${{ github.run_id }}
+          path: |
+            logs/
+            artifacts/
+          retention-days: 14
+
+      - name: Prune old artifacts
+        if: always()
+        run: |
+          .venv/bin/python -c "
+          from pathlib import Path
+          from ave.harness.artifacts.store import ArtifactStore
+          store = ArtifactStore(root=Path('artifacts'))
+          n = store.prune(retention_days=30)
+          print(f'pruned {n} files')
+          "

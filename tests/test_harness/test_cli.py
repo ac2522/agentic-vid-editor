@@ -33,13 +33,13 @@ def test_parse_args_default_tier_is_plan():
     assert ns.tier == "plan"
 
 
-def test_run_rejects_unsupported_tier():
+def test_run_rejects_unknown_tier():
+    """argparse choices rejects tier values outside the supported set."""
     from ave.harness.cli import build_parser
 
-    # 'render' is not yet implemented; argparse choices rejects it
     parser = build_parser()
     with pytest.raises(SystemExit) as exc_info:
-        parser.parse_args(["run", "--scenario-file", "x.yaml", "--tier", "render"])
+        parser.parse_args(["run", "--scenario-file", "x.yaml", "--tier", "bogus"])
     assert exc_info.value.code != 0
 
 
