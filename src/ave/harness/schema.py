@@ -118,10 +118,29 @@ class ExecuteExpected(_Frozen):
         return v
 
 
-class RenderExpected(_Frozen):
-    """Stub for Phase 4. Accepts any dict; validated later."""
+class RubricDimension(_Frozen):
+    dimension: str
+    prompt: str
+    pass_threshold: float = 0.5
+    veto: bool = False
 
-    raw: dict = Field(default_factory=dict)
+    @field_validator("pass_threshold", mode="before")
+    @classmethod
+    def _coerce_float(cls, v):
+        return float(v)
+
+
+class RenderExpected(_Frozen):
+    preset: str = "default"
+    rubric: tuple[RubricDimension, ...] = ()
+    artifact_retention_days: int = 30
+
+    @field_validator("rubric", mode="before")
+    @classmethod
+    def _coerce_rubric(cls, v):
+        if v is None:
+            return ()
+        return tuple(v)
 
 
 class Expected(_Frozen):
