@@ -65,10 +65,57 @@ class PlanExpected(_Frozen):
         return tuple(v)
 
 
-class ExecuteExpected(_Frozen):
-    """Stub for Phase 3. Accepts any dict; validated later."""
+class MinMax(_Frozen):
+    min: float | None = None
+    max: float | None = None
 
-    raw: dict = Field(default_factory=dict)
+    @field_validator("min", "max", mode="before")
+    @classmethod
+    def _coerce_float(cls, v):
+        if v is None:
+            return None
+        return float(v)
+
+
+class TimelineBounds(_Frozen):
+    clip_count: MinMax = Field(default_factory=MinMax)
+    duration_seconds: MinMax = Field(default_factory=MinMax)
+    effects_applied: tuple[str, ...] = ()
+    effects_forbidden: tuple[str, ...] = ()
+
+    @field_validator("clip_count", "duration_seconds", mode="before")
+    @classmethod
+    def _coerce_minmax(cls, v):
+        if v is None:
+            return MinMax()
+        return v
+
+    @field_validator("effects_applied", "effects_forbidden", mode="before")
+    @classmethod
+    def _coerce_tuple(cls, v):
+        if v is None:
+            return ()
+        return tuple(v)
+
+
+class ExecuteExpected(_Frozen):
+    timeline: TimelineBounds = Field(default_factory=TimelineBounds)
+    snapshots_created: MinMax = Field(default_factory=MinMax)
+    activity_log_entries: MinMax = Field(default_factory=MinMax)
+
+    @field_validator("timeline", mode="before")
+    @classmethod
+    def _coerce_timeline(cls, v):
+        if v is None:
+            return TimelineBounds()
+        return v
+
+    @field_validator("snapshots_created", "activity_log_entries", mode="before")
+    @classmethod
+    def _coerce_minmax(cls, v):
+        if v is None:
+            return MinMax()
+        return v
 
 
 class RenderExpected(_Frozen):

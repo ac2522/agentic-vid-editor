@@ -92,3 +92,76 @@ def test_unknown_plan_field_rejected():
                 "arg_constraints": {"trim": {"in_point": ">0"}},  # Spec mentions this
             }
         )
+
+
+# --- Phase 3: ExecuteExpected expansion tests ---
+
+def test_execute_expected_defaults_no_constraints():
+    from ave.harness.schema import ExecuteExpected, MinMax, TimelineBounds
+    e = ExecuteExpected()
+    assert e.timeline.clip_count.min is None
+    assert e.timeline.clip_count.max is None
+    assert e.timeline.duration_seconds.min is None
+    assert e.snapshots_created.min is None
+    assert e.activity_log_entries.min is None
+
+
+def test_minmax_accepts_int_and_float():
+    from ave.harness.schema import MinMax
+    m = MinMax(min=1, max=10.5)
+    assert m.min == 1.0
+    assert m.max == 10.5
+
+
+def test_minmax_accepts_none_bounds():
+    from ave.harness.schema import MinMax
+    m = MinMax()
+    assert m.min is None
+    assert m.max is None
+
+
+def test_timeline_bounds_effects_coerce_to_tuples():
+    from ave.harness.schema import TimelineBounds
+    b = TimelineBounds(effects_applied=["blur"], effects_forbidden=["cdl"])
+    assert b.effects_applied == ("blur",)
+    assert b.effects_forbidden == ("cdl",)
+
+
+def test_execute_expected_loads_from_full_dict():
+    from ave.harness.schema import ExecuteExpected
+    d = {
+        "timeline": {
+            "clip_count": {"min": 1, "max": 10},
+            "duration_seconds": {"min": 25.0, "max": 35.0},
+            "effects_applied": [],
+            "effects_forbidden": ["cdl"],
+        },
+        "snapshots_created": {"min": 1},
+        "activity_log_entries": {"min": 1},
+    }
+    e = ExecuteExpected.model_validate(d)
+    assert e.timeline.clip_count.min == 1.0
+    assert e.timeline.clip_count.max == 10.0
+    assert e.timeline.duration_seconds.min == 25.0
+    assert e.snapshots_created.min == 1.0
+    assert e.activity_log_entries.min == 1.0
+    assert e.timeline.effects_forbidden == ("cdl",)
+
+
+def test_scenario_with_execute_block_loads():
+    from ave.harness.schema import Scenario
+    d = {
+        "id": "test.execute",
+        "tiers": ["execute"],
+        "prompt": "trim something",
+        "expected": {
+            "execute": {
+                "timeline": {"clip_count": {"min": 1}},
+                "snapshots_created": {"min": 1},
+                "activity_log_entries": {"min": 1},
+            }
+        },
+    }
+    s = Scenario.model_validate(d)
+    assert s.expected.execute is not None
+    assert s.expected.execute.timeline.clip_count.min == 1.0
