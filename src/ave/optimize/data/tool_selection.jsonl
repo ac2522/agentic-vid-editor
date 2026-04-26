@@ -1,0 +1,12 @@
+{"id": "ts_001", "task": "Trim 2 seconds from the start of the clip", "expected_tools": ["trim_clip"], "expected_output_pattern": null, "context": {}}
+{"id": "ts_002", "task": "Split the video at the 5 second mark", "expected_tools": ["split_clip"], "expected_output_pattern": null, "context": {}}
+{"id": "ts_003", "task": "Concatenate clips A and B together", "expected_tools": ["concatenate"], "expected_output_pattern": null, "context": {}}
+{"id": "ts_004", "task": "Set the audio volume to -6dB", "expected_tools": ["adjust_volume"], "expected_output_pattern": null, "context": {}}
+{"id": "ts_005", "task": "Add a crossfade transition between the two clips", "expected_tools": ["add_transition"], "expected_output_pattern": null, "context": {}}
+{"id": "ts_006", "task": "Detect all scene boundaries in this video", "expected_tools": ["detect_scenes"], "expected_output_pattern": null, "context": {}}
+{"id": "ts_007", "task": "Transcribe the audio from this clip", "expected_tools": ["transcribe"], "expected_output_pattern": null, "context": {}}
+{"id": "ts_008", "task": "Apply a LUT to the footage for a warm look", "expected_tools": ["apply_lut"], "expected_output_pattern": null, "context": {}}
+{"id": "ts_009", "task": "Speed up the clip to 2x playback speed", "expected_tools": ["set_speed"], "expected_output_pattern": null, "context": {}}
+{"id": "ts_010", "task": "Add a text overlay that says 'Chapter 1' at the start", "expected_tools": ["add_text_overlay"], "expected_output_pattern": null, "context": {}}
+{"id": "ts_011", "task": "Remove filler words from the transcript and trim the video accordingly", "expected_tools": ["transcribe", "remove_fillers", "trim_clip"], "expected_output_pattern": null, "context": {}}
+{"id": "ts_012", "task": "Normalize the audio levels across all clips", "expected_tools": ["normalize_audio"], "expected_output_pattern": null, "context": {}}

@@ -1,0 +1,6 @@
+{"id": "rr_001", "task": "Trim the first 3 seconds and add a transition", "expected_tools": [], "expected_output_pattern": "editor", "context": {"expected_role": "editor"}}
+{"id": "rr_002", "task": "Apply color grading with a cinematic warm tone", "expected_tools": [], "expected_output_pattern": "colorist", "context": {"expected_role": "colorist"}}
+{"id": "rr_003", "task": "Adjust the background music volume and add a fade out", "expected_tools": [], "expected_output_pattern": "sound_designer", "context": {"expected_role": "sound_designer"}}
+{"id": "rr_004", "task": "Generate a transcript with word-level timestamps", "expected_tools": [], "expected_output_pattern": "transcriptionist", "context": {"expected_role": "transcriptionist"}}
+{"id": "rr_005", "task": "Remove the green screen background from the interview footage", "expected_tools": [], "expected_output_pattern": "editor", "context": {"expected_role": "vfx_artist"}}
+{"id": "rr_006", "task": "Fix the white balance which is too blue", "expected_tools": [], "expected_output_pattern": "colorist", "context": {"expected_role": "colorist"}}
