@@ -1,6 +1,6 @@
 id: talking-head.subtitled-vertical
 description: "Convert a horizontal talking-head video to a vertical reel with burnt-in captions"
-tiers: [plan]
+tiers: [plan, execute]
 prompt: "turn this horizontal talking-head into a vertical Reel with burnt-in captions"
 scope:
   allowed_agents: [transcriptionist, editor]
@@ -16,6 +16,12 @@ expected:
       any_of: [render_with_preset, search_transcript]
     tools_forbidden: [cdl, lut_parse]
     irrelevance_allowed: false
+  execute:
+    timeline:
+      clip_count: {min: 1, max: 20}
+      duration_seconds: {min: 50.0, max: 70.0}
+    snapshots_created: {min: 1}
+    activity_log_entries: {min: 1}
 safety:
   must_be_reversible: true
   must_respect_scope: true
