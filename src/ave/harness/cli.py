@@ -1,16 +1,24 @@
 """`ave-harness` CLI.
 
-Usage
------
+Subcommands
+-----------
 
-    ave-harness run --scenario-file path/to/scenario.yaml [--tier plan|execute]
+    ave-harness run --scenario-file path/to/scenario.yaml [--tier plan|execute|render]
                     [--model mockllm/mock] [--log-dir ./logs]
+
+    ave-harness export-dataset --output dataset.jsonl
+                               [--scenarios-dir src/ave/harness/scenarios]
+                               [--name harness]
+
+    ave-harness analyze-log --log-file path/to/run.eval [--failures-only]
 """
 
 from __future__ import annotations
 
 import argparse
+import json
 import sys
+from pathlib import Path
 from typing import Sequence
 
 
@@ -39,16 +47,38 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Directory for Inspect AI eval logs (default: ./logs)",
     )
+
+    export = sub.add_parser(
+        "export-dataset",
+        help="Export harness scenarios as an opik-compatible EvalDataset JSONL",
+    )
+    export.add_argument("--output", required=True, help="Output JSONL path")
+    export.add_argument(
+        "--scenarios-dir",
+        default=None,
+        help="Directory of scenario YAMLs (defaults to bundled flagship scenarios)",
+    )
+    export.add_argument(
+        "--name",
+        default="harness",
+        help="Dataset name (default: harness)",
+    )
+
+    analyze = sub.add_parser(
+        "analyze-log",
+        help="Parse an Inspect AI eval log into structured FeedbackRow records",
+    )
+    analyze.add_argument("--log-file", required=True, help="Path to a .eval log file")
+    analyze.add_argument(
+        "--failures-only",
+        action="store_true",
+        help="Print only failing rows (training-signal mode)",
+    )
+
     return p
 
 
-def cli_main(argv: Sequence[str] | None = None) -> int:
-    parser = build_parser()
-    ns = parser.parse_args(argv)
-
-    if ns.command != "run":
-        parser.error(f"unknown command: {ns.command}")
-
+def _run_subcommand(ns: argparse.Namespace) -> int:
     try:
         from inspect_ai import eval as inspect_eval
         from inspect_ai.model import get_model
@@ -80,6 +110,77 @@ def cli_main(argv: Sequence[str] | None = None) -> int:
         print("error: no eval results produced", file=sys.stderr)
         return 4
     return 0
+
+
+def _export_dataset_subcommand(ns: argparse.Namespace) -> int:
+    from ave.harness.feedback.scenarios_to_dataset import (
+        scenarios_to_dataset,
+        write_dataset_to_jsonl,
+    )
+    from ave.harness.loader import load_scenario_from_yaml
+    from ave.harness.pytest_plugin import (
+        bundled_scenarios_dir,
+        discover_plan_scenarios,
+    )
+
+    scenarios_dir = Path(ns.scenarios_dir) if ns.scenarios_dir else bundled_scenarios_dir()
+    paths = discover_plan_scenarios(scenarios_dir)
+    if not paths:
+        print(f"error: no .yaml scenarios in {scenarios_dir}", file=sys.stderr)
+        return 5
+    scenarios = [load_scenario_from_yaml(Path(p)) for p in paths]
+    dataset = scenarios_to_dataset(scenarios, name=ns.name)
+    n = write_dataset_to_jsonl(dataset, Path(ns.output))
+    print(f"wrote {n} rows to {ns.output}")
+    return 0
+
+
+def _analyze_log_subcommand(ns: argparse.Namespace) -> int:
+    try:
+        from ave.harness.feedback.eval_log import (
+            eval_log_to_feedback_rows,
+            summarize_failures,
+        )
+    except ImportError as exc:
+        print(f"error: feedback module missing ({exc})", file=sys.stderr)
+        return 3
+
+    log_path = Path(ns.log_file)
+    if not log_path.exists():
+        print(f"error: log file not found: {log_path}", file=sys.stderr)
+        return 6
+
+    rows = eval_log_to_feedback_rows(log_path)
+    if ns.failures_only:
+        rows = summarize_failures(rows)
+    for row in rows:
+        verdict = "PASS" if row.passed else "FAIL"
+        print(json.dumps({
+            "sample_id": row.sample_id,
+            "scorer": row.scorer_name,
+            "verdict": verdict,
+            "rule": row.verdict_rule,
+            "reason": row.reason,
+            "called_tools": row.called_tools,
+            "expected_tools": list(row.expected_tools),
+        }))
+    print(f"# {len(rows)} row(s)", file=sys.stderr)
+    return 0
+
+
+def cli_main(argv: Sequence[str] | None = None) -> int:
+    parser = build_parser()
+    ns = parser.parse_args(argv)
+
+    if ns.command == "run":
+        return _run_subcommand(ns)
+    if ns.command == "export-dataset":
+        return _export_dataset_subcommand(ns)
+    if ns.command == "analyze-log":
+        return _analyze_log_subcommand(ns)
+
+    parser.error(f"unknown command: {ns.command}")
+    return 2
 
 
 def main() -> None:

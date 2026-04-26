@@ -27,6 +27,21 @@ class FeedbackRow:
     metadata: dict = field(default_factory=dict)
 
 
+def _extract_expected_tools(scenario) -> tuple[str, ...]:
+    """Inspect AI re-reads a Scenario as a dict, not the Pydantic model — handle both."""
+    if scenario is None:
+        return ()
+    if isinstance(scenario, dict):
+        plan = (scenario.get("expected") or {}).get("plan") or {}
+        req = plan.get("tools_required") or {}
+        return tuple(req.get("all_of") or ()) + tuple(req.get("any_of") or ())
+    expected = getattr(scenario, "expected", None)
+    plan = getattr(expected, "plan", None) if expected else None
+    if plan is None:
+        return ()
+    return tuple(plan.tools_required.all_of) + tuple(plan.tools_required.any_of)
+
+
 def messages_to_llm_response(messages) -> LLMResponse:
     """Walk Inspect AI ChatMessage list, build an LLMResponse with text + tool calls.
 
@@ -64,11 +79,7 @@ def eval_log_to_feedback_rows(log_path: Path) -> list[FeedbackRow]:
     for sample in log.samples or []:
         called_tools = list(sample.metadata.get("called_tools", []) if sample.metadata else [])
         scenario = (sample.metadata or {}).get("scenario")
-        expected_tools: tuple[str, ...] = ()
-        if scenario is not None and getattr(scenario, "expected", None):
-            plan = scenario.expected.plan
-            if plan is not None:
-                expected_tools = tuple(plan.tools_required.all_of) + tuple(plan.tools_required.any_of)
+        expected_tools = _extract_expected_tools(scenario)
         task = str(getattr(sample, "input", "") or "")
         for scorer_name, score in (sample.scores or {}).items():
             rule = None
