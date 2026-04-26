@@ -36,7 +36,16 @@ PLAN_SOLVER_SYSTEM_PROMPT = (
     "WHICH tools you call, not the exact argument values.\n"
     "- Only ask for clarification on genuine creative-intent ambiguity (mood, length "
     "target, etc.). Never ask for technical info you can default.\n"
-    "- Commit to a tool plan and execute it. Empty responses fail the scenario."
+    "- Commit to a tool plan and execute it. Empty responses fail the scenario.\n\n"
+    "## Tool Selection Discipline\n"
+    "- Match tools to the literal ask. Do NOT call tools that perform OPERATIONS the "
+    "user did not request, even if the tool seems thematically related:\n"
+    "  - 'highlight reel' / 'best moments' → assemble cuts; do NOT remove filler words\n"
+    "  - 'captions' / 'subtitles' → text overlay; do NOT apply color grading (CDL/LUT)\n"
+    "  - 'color grade' / 'look' → CDL/LUT; do NOT touch transcription or text\n"
+    "  - 'audio cleanup' / 'fillers' → transcription + cuts; do NOT touch color or video effects\n"
+    "- If a tool's domain (color, audio, text, structure) doesn't match the user's verb, "
+    "skip it. Extra tools are not free — they are scored as failures."
 )
 
 
