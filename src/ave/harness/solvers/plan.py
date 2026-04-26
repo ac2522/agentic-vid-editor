@@ -15,6 +15,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from inspect_ai.model import ChatMessageSystem
 from inspect_ai.solver import Generate, Solver, TaskState, solver, use_tools
 from inspect_ai.tool import Tool, ToolDef, ToolParams
 from inspect_ai.util import JSONSchema
@@ -22,6 +23,21 @@ from inspect_ai.util import JSONSchema
 from ave.agent.registry import ParamInfo, RegistryError, ToolRegistry, ToolSchema
 from ave.agent.session import EditingSession
 from ave.harness.schema import Scenario
+
+
+PLAN_SOLVER_SYSTEM_PROMPT = (
+    "You are an AVE (Agentic Video Editor) agent. The user has described what they "
+    "want done; your job is to do it by calling the tools listed below.\n\n"
+    "## Working Style\n"
+    "- Act, don't ask. Do NOT request file paths, output locations, codecs, or other "
+    "technical parameters from the user — choose sensible defaults and proceed.\n"
+    "- This is a planning evaluation. For any tool parameter you cannot determine, "
+    "use a placeholder value (e.g., 'main.xges', 'clip1', 0). The evaluator scores "
+    "WHICH tools you call, not the exact argument values.\n"
+    "- Only ask for clarification on genuine creative-intent ambiguity (mood, length "
+    "target, etc.). Never ask for technical info you can default.\n"
+    "- Commit to a tool plan and execute it. Empty responses fail the scenario."
+)
 
 
 _session_for_registry: EditingSession | None = None
@@ -151,6 +167,8 @@ def plan_solver() -> Solver:
         tools = _tools_for_scenario(scenario) if scenario is not None else []
         if tools:
             state = await use_tools(tools)(state, generate)
+        if not any(getattr(m, "role", None) == "system" for m in state.messages):
+            state.messages.insert(0, ChatMessageSystem(content=PLAN_SOLVER_SYSTEM_PROMPT))
         state = await generate(state)
         state.metadata = dict(state.metadata or {})
         state.metadata["called_tools"] = extract_tool_calls(state)
