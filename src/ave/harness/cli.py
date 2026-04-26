@@ -1,13 +1,10 @@
-"""`ave-harness` CLI — minimal entry point for Phase 2.
+"""`ave-harness` CLI.
 
 Usage
 -----
 
-    ave-harness run --scenario-file path/to/scenario.yaml [--tier plan]
+    ave-harness run --scenario-file path/to/scenario.yaml [--tier plan|execute]
                     [--model mockllm/mock] [--log-dir ./logs]
-
-Only the ``plan`` tier is implemented in Phase 2; the other tiers return a
-non-zero exit code with a clear error until Phases 3 and 4 land.
 """
 
 from __future__ import annotations
@@ -17,7 +14,7 @@ import sys
 from typing import Sequence
 
 
-SUPPORTED_TIERS = ("plan",)
+SUPPORTED_TIERS = ("plan", "execute")
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -29,7 +26,8 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument(
         "--tier",
         default="plan",
-        help="Evaluation tier (only 'plan' is available in Phase 2)",
+        choices=list(SUPPORTED_TIERS),
+        help="Evaluation tier: plan (tool selection) or execute (real tool execution)",
     )
     run.add_argument(
         "--model",
@@ -51,19 +49,11 @@ def cli_main(argv: Sequence[str] | None = None) -> int:
     if ns.command != "run":
         parser.error(f"unknown command: {ns.command}")
 
-    if ns.tier not in SUPPORTED_TIERS:
-        print(
-            f"error: tier {ns.tier!r} not implemented in Phase 2 "
-            f"(supported: {list(SUPPORTED_TIERS)})",
-            file=sys.stderr,
-        )
-        return 2
-
     try:
         from inspect_ai import eval as inspect_eval
         from inspect_ai.model import get_model
 
-        from ave.harness.task import plan_rung_task
+        from ave.harness.task import execute_rung_task, plan_rung_task
     except ImportError as exc:
         print(
             f"error: harness deps missing ({exc}). Install with `pip install ave[harness]`",
@@ -71,11 +61,15 @@ def cli_main(argv: Sequence[str] | None = None) -> int:
         )
         return 3
 
-    task = plan_rung_task(scenario_file=ns.scenario_file)
+    if ns.tier == "plan":
+        harness_task = plan_rung_task(scenario_file=ns.scenario_file)
+    else:
+        harness_task = execute_rung_task(scenario_file=ns.scenario_file)
+
     model = get_model(ns.model)
     log_dir = ns.log_dir or "./logs"
 
-    results = inspect_eval(task, model=model, display="plain", log_dir=log_dir)
+    results = inspect_eval(harness_task, model=model, display="plain", log_dir=log_dir)
     if not results:
         print("error: no eval results produced", file=sys.stderr)
         return 4

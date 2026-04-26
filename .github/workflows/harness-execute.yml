@@ -1,0 +1,81 @@
+name: Harness Execute Tier
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "src/ave/harness/**"
+      - "src/ave/agent/**"
+      - "src/ave/project/snapshots.py"
+      - "tests/test_harness/**"
+  pull_request:
+    branches: [master]
+    paths:
+      - "src/ave/harness/**"
+      - "src/ave/agent/**"
+      - "src/ave/project/snapshots.py"
+      - "tests/test_harness/**"
+  workflow_dispatch:
+
+jobs:
+  harness-plan:
+    name: Harness Rung A (plan tier)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ffmpeg python3-gi python3-venv libcairo2-dev
+
+      - name: Set up venv
+        run: |
+          python3 -m venv --system-site-packages .venv
+          .venv/bin/pip install -e ".[harness]" --quiet
+
+      - name: Run plan-tier harness tests
+        run: |
+          .venv/bin/python -m pytest tests/test_harness/ -m "not gpu and not slow" \
+            --ignore=tests/test_harness/test_safety_properties.py \
+            -q --tb=short
+
+  harness-execute:
+    name: Harness Rung B (execute tier, Docker)
+    runs-on: ubuntu-24.04
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/ave-dev:latest
+      options: --user root
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install harness extras
+        run: |
+          .venv/bin/pip install -e ".[harness]" --quiet
+
+      - name: Run execute-tier harness tests (requires GES)
+        run: |
+          .venv/bin/python -m pytest tests/test_harness/ \
+            -m "not gpu and not slow" \
+            -q --tb=short
+        env:
+          PYTHONPATH: src
+
+  harness-safety-properties:
+    name: Hypothesis safety property tests
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up venv
+        run: |
+          python3 -m venv --system-site-packages .venv
+          sudo apt-get update -q && sudo apt-get install -y -q python3-gi libcairo2-dev
+          .venv/bin/pip install hypothesis -e ".[harness]" --quiet
+
+      - name: Run Hypothesis property tests
+        run: |
+          .venv/bin/python -m pytest tests/test_harness/test_safety_properties.py \
+            -q --tb=short
+        env:
+          HYPOTHESIS_SEED: 0
