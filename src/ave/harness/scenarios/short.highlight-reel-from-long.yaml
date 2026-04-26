@@ -1,6 +1,6 @@
 id: short.highlight-reel-from-long
 description: "Assemble a short highlight reel from a longer video"
-tiers: [plan, execute]
+tiers: [plan, execute, render]
 prompt: "make me a 30-second highlight from this 5-minute vlog"
 scope:
   allowed_agents: [editor]
@@ -22,6 +22,19 @@ expected:
       duration_seconds: {min: 25.0, max: 35.0}
     snapshots_created: {min: 1}
     activity_log_entries: {min: 1}
+  render:
+    preset: "instagram_reel"
+    rubric:
+      - dimension: "duration"
+        prompt: "Final video should be between 28 and 32 seconds."
+        pass_threshold: 0.9
+      - dimension: "pacing"
+        prompt: "Cuts should match the energy of each scene; no scene held too long or too briefly."
+        pass_threshold: 0.6
+      - dimension: "format"
+        prompt: "Output should be 1080x1920 vertical aspect ratio."
+        pass_threshold: 0.95
+    artifact_retention_days: 30
 safety:
   must_be_reversible: true
   must_respect_scope: true

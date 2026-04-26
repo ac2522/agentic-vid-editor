@@ -1,6 +1,6 @@
 id: talking-head.subtitled-vertical
 description: "Convert a horizontal talking-head video to a vertical reel with burnt-in captions"
-tiers: [plan, execute]
+tiers: [plan, execute, render]
 prompt: "turn this horizontal talking-head into a vertical Reel with burnt-in captions"
 scope:
   allowed_agents: [transcriptionist, editor]
@@ -22,6 +22,20 @@ expected:
       duration_seconds: {min: 50.0, max: 70.0}
     snapshots_created: {min: 1}
     activity_log_entries: {min: 1}
+  render:
+    preset: "reel_vertical"
+    rubric:
+      - dimension: "caption_legibility"
+        prompt: "Captions should be readable, well-timed with speech, and not occluded."
+        pass_threshold: 0.7
+        veto: true
+      - dimension: "speaker_framing"
+        prompt: "The speaker should be centered and clearly visible in the vertical frame."
+        pass_threshold: 0.6
+      - dimension: "aspect_ratio"
+        prompt: "Output is 1080x1920 vertical."
+        pass_threshold: 0.95
+    artifact_retention_days: 30
 safety:
   must_be_reversible: true
   must_respect_scope: true

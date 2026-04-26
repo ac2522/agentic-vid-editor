@@ -1,6 +1,6 @@
 id: reel.filler-word-trim
 description: "Remove filler words (um, ah, you know) from an interview clip"
-tiers: [plan, execute]
+tiers: [plan, execute, render]
 prompt: "clean up the ums and ahs in this interview clip"
 scope:
   allowed_agents: [transcriptionist, editor]
@@ -22,6 +22,18 @@ expected:
       duration_seconds: {min: 50.0, max: 70.0}
     snapshots_created: {min: 1}
     activity_log_entries: {min: 1}
+  render:
+    preset: "reel_vertical"
+    rubric:
+      - dimension: "audio_continuity"
+        prompt: "Audio should flow naturally without harsh cuts or clicks at trim boundaries."
+        pass_threshold: 0.7
+        veto: true
+      - dimension: "content_preservation"
+        prompt: "All meaningful speech content should be preserved; only filler words removed."
+        pass_threshold: 0.7
+        veto: true
+    artifact_retention_days: 30
 safety:
   must_be_reversible: true
   must_respect_scope: true
